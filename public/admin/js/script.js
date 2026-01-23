@@ -1,14 +1,13 @@
 // Button status
 const buttonsStatus = document.querySelectorAll("[button-status]")
-if(buttonsStatus.length > 0){
+if (buttonsStatus.length > 0) {
   let url = new URL(window.location.href)
-  buttonsStatus.forEach(button=>{
-    button.addEventListener("click",()=>{
+  buttonsStatus.forEach(button => {
+    button.addEventListener("click", () => {
       const status = button.getAttribute("button-status")
-      if(status){
-        url.searchParams.set("status",status)
-      }
-      else{
+      if (status) {
+        url.searchParams.set("status", status)
+      } else {
         url.searchParams.delete("status")
       }
       window.location.href = url.href
@@ -18,15 +17,14 @@ if(buttonsStatus.length > 0){
 // End button status
 // Form Search
 const formSearch = document.querySelector("#form-search")
-if(formSearch){
-  formSearch.addEventListener("submit",(e)=>{
+if (formSearch) {
+  formSearch.addEventListener("submit", (e) => {
     e.preventDefault()
     const url = new URL(window.location.href)
     const keyword = e.target.elements.keyword.value
-    if(keyword){
+    if (keyword) {
       url.searchParams.set("keyword", keyword)
-    }
-    else{
+    } else {
       url.searchParams.delete("keyword")
     }
     window.location.href = url.href
@@ -36,10 +34,10 @@ if(formSearch){
 // End Form Search
 // Pagination
 const buttonsPagination = document.querySelectorAll("[button-pagination]")
-if(buttonsPagination.length > 0){
-  buttonsPagination.forEach(button=>{
-    button.addEventListener("click",()=>{
-      let url =new URL(window.location.href)
+if (buttonsPagination.length > 0) {
+  buttonsPagination.forEach(button => {
+    button.addEventListener("click", () => {
+      let url = new URL(window.location.href)
       const page = button.getAttribute("button-pagination")
       url.searchParams.set("page", page)
       window.location.href = url.href
@@ -71,8 +69,7 @@ if (checkboxMulti) {
       const countChecked = checkboxMulti.querySelectorAll("input[name='id']:checked").length
       if (countChecked == inputsId.length) {
         inputCheckAll.checked = true
-      }
-      else{
+      } else {
         inputCheckAll.checked = false
       }
     })
@@ -82,38 +79,36 @@ if (checkboxMulti) {
 
 // Form Change Multi
 const formChangeMulti = document.querySelector("[form-change-multi]")
-if(formChangeMulti){
-  formChangeMulti.addEventListener("submit", (e)=>{
+if (formChangeMulti) {
+  formChangeMulti.addEventListener("submit", (e) => {
     e.preventDefault();
     const checkboxMulti = document.querySelector("[checkbox-multi]")
     const inputsCheck = checkboxMulti.querySelectorAll("input[name='id']:checked")
     const typeChange = e.target.elements.type.value
-    if(typeChange == "delete-all"){
+    if (typeChange == "delete-all") {
       const isConfirm = confirm("Bạn có chắc muốn xóa sản phẩm này")
-      if(!isConfirm){
+      if (!isConfirm) {
         return
       }
     }
-    if(inputsCheck.length>0){
+    if (inputsCheck.length > 0) {
       let ids = [];
       const inputIds = formChangeMulti.querySelector("input[name='ids']")
-      inputsCheck.forEach(input =>{
+      inputsCheck.forEach(input => {
         const id = input.value;
-        if(typeChange === "change-position"){
-          const position = input.closest("tr").querySelector("input[name = 'position']").value 
+        if (typeChange === "change-position") {
+          const position = input.closest("tr").querySelector("input[name = 'position']").value
           // từ cái thẻ input, tìm phần tử cha là "tr" gần thẻ input nhất, xong rồi querySelector đến cái "input[name = 'position']"
           // để tìm cái giá trị người dùng nhập
           ids.push(`${id}-${position}`)
-        }
-        else{
+        } else {
           ids.push(id)
         }
       })
       inputIds.value = ids.join(", ")
       console.log(ids.join(", "));
       formChangeMulti.submit();
-    }
-    else{
+    } else {
       alert("Vui lòng nhập lại")
     }
   })
@@ -122,14 +117,44 @@ if(formChangeMulti){
 // End Form Change Multi
 // Show Alert
 const showAlert = document.querySelector("[show-alert]")
-if(showAlert){
+if (showAlert) {
   const time = showAlert.getAttribute("data-time")
   const closeAlert = showAlert.querySelector("[close-alert]")
-  setTimeout(()=>{
+  setTimeout(() => {
     showAlert.classList.add("alert-hidden")
-  },time)
-  closeAlert.addEventListener("click",()=>{
+  }, time)
+  closeAlert.addEventListener("click", () => {
     showAlert.classList.add("alert-hidden")
   })
 }
 // End Show Alert
+
+// Sort
+const sort = document.querySelector("[sort]")
+if(sort){
+  const sortSelect = sort.querySelector("[sort-select]")
+  const sortClear = sort.querySelector("[sort-clear]")
+  const url = new URL(window.location.href)
+  sortSelect.addEventListener("change",(e)=>{
+    const value = e.target.value
+    const [sortKey, sortValue] = value.split("-")
+    url.searchParams.set("sortKey", sortKey)
+    url.searchParams.set("sortValue", sortValue)
+    window.location.href = url.href
+  })
+  sortClear.addEventListener("click",()=>{
+    url.searchParams.delete("sortKey")
+    url.searchParams.delete("sortValue")
+    window.location.href = url.href
+  })
+  // Add Selected
+  const sortKey = url.searchParams.get("sortKey")
+  const sortValue = url.searchParams.get("sortValue")
+  if(sortKey && sortValue){
+    const sortString = `${sortKey}-${sortValue}`
+    const sortSelected = sortSelect.querySelector(`option[value = '${sortString}']`)
+    sortSelected.selected = true
+  }
+  // End Add Selected
+}
+// Sort

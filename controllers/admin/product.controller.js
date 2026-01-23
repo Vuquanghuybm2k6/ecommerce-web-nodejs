@@ -12,16 +12,32 @@ module.exports.index = async (req,res) =>{
   if(req.query.status){
     find.status = req.query.status
   }
+
+  // Search
   if(req.query.keyword){
     const regex = searchHelper(req.query)
     find.title = regex
   }
+  // End Search
+
+  // Paginate
   const totalProduct = await Product.countDocuments(find)
   const pagination = paginationHelper(req.query, totalProduct,{
     currentPage:1,
     limitItem: 4
   })
-  const products = await Product.find(find).limit(pagination.limitItem).skip(pagination.skip).sort({postion: "desc"})
+  // Paginate
+  //  Sort
+  const sort = {}
+  if(req.query.sortKey && req.query.sortValue){
+    sort[req.query.sortKey] = req.query.sortValue
+  }
+  else{
+    sort.position = "desc"
+  }
+  // End Sort
+
+  const products = await Product.find(find).limit(pagination.limitItem).skip(pagination.skip).sort(sort)
   res.render("admin/pages/products/index.pug",
     {
       pageTitle: "Danh sách sản phẩm",
@@ -100,9 +116,6 @@ module.exports.createPost = async (req,res)=>{
   else{
     const countProduct = await Product.countDocuments()
     req.body.position = countProduct+1 
-  }
-  if(req.file){
-    req.body.thumbnail = `/uploads/${req.file.filename}` // lấy ra đường dẫn của ảnh, req.file.filename là lấy ra tên ảnh
   }
   const product = new Product(req.body)
   await product.save()

@@ -4,6 +4,7 @@ include ../../mixins/search.pug
 include ../../mixins/pagination.pug
 include ../../mixins/form-change-multi.pug
 include ../../mixins/alert.pug
+include ../../mixins/sort.pug
 block main 
   +alert-success(5000)
   h1 Danh sách sản phẩm
@@ -15,7 +16,12 @@ block main
           +filter-status(filterStatus)
         .col-6 
           +search(keyword)
-
+  .card 
+    .card-header Sắp xếp 
+    .card-body 
+      .row 
+        .col-4 
+          +sort
   .card 
     .card-header Danh sách sản phẩm
     .card-body
