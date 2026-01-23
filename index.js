@@ -2,9 +2,10 @@ const express = require('express')
 const app = express()
 require('dotenv').config()
 const port = process.env.PORT
-
+const path = require("path") 
 const systemConfig = require("./config/system")
 
+// Flash
 const  session = require('express-session')
 const cookieParser = require('cookie-parser')
 var flash = require('express-flash')
@@ -18,6 +19,11 @@ app.use(session({
   }
 }))
 app.use(flash())
+// End Flash
+
+// Tiny MCE
+app.use('/tinymce', express.static(path.join(__dirname,'node_modules','tinymce')))
+// End Tiny MCE
 
 const route = require("./routes/client/index.route")
 const routeAdmin = require("./routes/admin/index.route")
