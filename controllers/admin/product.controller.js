@@ -64,8 +64,6 @@ module.exports.changeStatus = async (req,res) =>{
 module.exports.changeMulti = async (req,res) =>{
   const type = req.body.type
   const ids = req.body.ids.split(", ").map(id =>id.trim()) 
-  // ban đầu req.body.ids là một string :"id1, id2, id3", dùng hàm split để tách các phần tử đó thành 1 mảng string ["id1", "id2", "id3"]
-  // dùng map(id=>id.trim()) để duyệt từng phần tử trong mảng và trả ra một mảng mới, và xóa những dấu cách thừa đi
   switch(type){
     case "active":
       await Product.updateMany({_id:{$in:ids}},{status: "active"})

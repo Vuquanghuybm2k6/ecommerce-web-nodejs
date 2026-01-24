@@ -8,7 +8,7 @@ mixin table-tree(items, level = 1)
           name ="id"
           value =item.id
         ) 
-      td #{index +1}
+      td #{item.index}
       td
         img(
           src= item.thumbnail 
@@ -34,7 +34,6 @@ mixin table-tree(items, level = 1)
             button-change-status 
             class="badge badge-success" ) Hoạt động
         else
-          //- cái href="javascript: ;" để máy hiểu rằng ta đang bắt sự kiện bằng javascript 
           a(
             href="javascript: ;" 
             data-status = item.status
@@ -42,7 +41,6 @@ mixin table-tree(items, level = 1)
             button-change-status 
             class="badge badge-danger") Dừng hoạt động
       td
-        //- dùng bootstrap để css cho các nút
         a(
           href = `${prefixAdmin}/products-category/detail/${item.id}`
           class="btn btn-secondary btn-sm"
