@@ -13,7 +13,7 @@ router.get(
 router.post(
   "/create",
   upload.single("thumbnail"),
-  uploadCloud.upload,
   validate.create,
+  uploadCloud.upload,
   controller.createPost)
 module.exports = router

@@ -23,7 +23,7 @@ block main
     div(class="form-group")
       label(for="parent_id") Danh mục cha
       select(name = "parent_id" id = "parent_id" class = 'form-control')
-        option(valuev= "") -- Chọn danh mục cha --
+        option(value= "") -- Chọn danh mục cha --
         if(records)
           +select-tree(records)
     div(class = "form-group")
@@ -44,7 +44,7 @@ block main
         name = "content" 
         rows = "5"
         )
-    div(class = "form-group")
+    div(class = "form-group" upload-image)
       label(for = "thumbnail") Ảnh
       input(
         type = "file" 
