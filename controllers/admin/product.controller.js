@@ -1,7 +1,7 @@
 const Product =require("../../models/product.model")
-const filterStatusHelper = require("../../helper/admin/filterStatus")
-const searchHelper = require("../../helper/admin/search")
-const paginationHelper = require("../../helper/admin/pagination")
+const filterStatusHelper = require("../../helper/filterStatus")
+const searchHelper = require("../../helper/search")
+const paginationHelper = require("../../helper/pagination")
 const systemConfig = require("../../config/system")
 // [GET]: /admin/products
 module.exports.index = async (req,res) =>{
