@@ -26,7 +26,42 @@ module.exports.createPost = async (req, res) => {
 // [PATCH]: /admin/roles/delete/:id
 module.exports.delete = async (req, res) => {
   const id = req.params.id
-  await Role.updateOne({_id:id}, {deleted: true})
+  await Role.updateOne({
+    _id: id
+  }, {
+    deleted: true
+  })
   req.flash("success", "Xóa nhóm quyền thành công")
   res.redirect(`${systemConfig.prefixAdmin}/roles`)
+}
+// [GET]: /admin/roles/edit/:id
+module.exports.edit = async (req, res) => {
+  try {
+    const id = req.params.id
+    const data = await Role.findOne({
+      _id: id
+    }, {
+      deleted: false
+    })
+    res.render("admin/pages/roles/edit.pug", {
+      pageTitle: "Chỉnh sửa nhóm quyền",
+      data: data
+    })
+  } catch (error) {
+    res.redirect(`${systemConfig.prefixAdmin}/roles`)
+  }
+}
+// [PATCH]: /admin/roles/delete/:id
+module.exports.editPatch = async (req, res) => {
+  try {
+    const id = req.params.id
+    await Role.updateOne({
+      _id: id
+    }, req.body)
+    req.flash("success", "Cập nhật nhóm quyền thành công")
+  } catch (error) {
+    req.flash("error", "Cập nhật nhóm quyền thất bại")
+
+  }
+  res.redirect(req.get("Referer"))
 }
