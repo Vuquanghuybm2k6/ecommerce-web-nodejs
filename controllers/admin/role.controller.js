@@ -23,3 +23,10 @@ module.exports.createPost = async (req, res) => {
   req.flash("success", "Tạo mới nhóm quyền thành công")
   res.redirect(`${systemConfig.prefixAdmin}/roles`)
 }
+// [PATCH]: /admin/roles/delete/:id
+module.exports.delete = async (req, res) => {
+  const id = req.params.id
+  await Role.updateOne({_id:id}, {deleted: true})
+  req.flash("success", "Xóa nhóm quyền thành công")
+  res.redirect(`${systemConfig.prefixAdmin}/roles`)
+}

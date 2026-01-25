@@ -8,4 +8,6 @@ router.post(
   "/create", 
   validate.createPost,
   controller.createPost)
+router.patch("/delete/:id", controller.delete)
+
 module.exports = router
