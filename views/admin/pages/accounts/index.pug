@@ -1,5 +1,8 @@
 extends ../../layouts/default.pug
+include ../../mixins/alert.pug
 block main 
+  +alert-success(5000)
+  +alert-error(5000)
   h1(class ="mb-4") Danh sách tài khoản
   .card.mb-3 
     .card-header Danh sách
@@ -36,12 +39,16 @@ block main
                     href ="javascript:;"
                     class = "badge badge-success"
                     data-status = "active"
+                    data-id = item.id
+                    button-change-status
                   ) Hoạt động
                 else
                   a(
                     href ="javascript:;"
-                    class = "badge badge-success"
+                    class = "badge badge-danger"
                     data-status = "inactive"
+                    data-id = item.id
+                    button-change-status
                   ) Dừng hoạt động
               td 
                   a(
@@ -57,3 +64,16 @@ block main
                     button-delete 
                     data-id = item.id 
                     ) Xóa
+  form(
+    action = ``
+    method = "POST"
+    data-path = `${prefixAdmin}/accounts/delete`
+    id = "form-delete-account"
+  )
+  form(
+    action = ``
+    method = "POST"
+    data-path = `${prefixAdmin}/accounts/change-status`
+    id = "form-change-status"
+  )
+  script(src = "/admin/js/account.js")

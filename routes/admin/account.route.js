@@ -21,4 +21,6 @@ router.patch(
   uploadCloud.upload,
   controller.editPatch)
 router.get("/detail/:id", controller.detail)
+router.patch("/delete/:id", controller.delete)
+router.patch("/change-status/:status/:id", controller.changeStatus)
 module.exports = router

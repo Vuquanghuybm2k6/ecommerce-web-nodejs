@@ -1,5 +1,4 @@
 extends ../../layouts/default.pug
-
 block main 
   if (account.avatar)
     div(class="mb-4")
@@ -19,8 +18,6 @@ block main
         span(class="badge badge-danger") Dừng hoạt động
   if(account.role)
     div(class="mb-4") <b>Quyền:</b> #{account.role}
-  if(account.position)
-    div(class = "mb-4") Vị trí : <b>#{product.position}</b>
   a(
      href=`${prefixAdmin}/accounts/edit/${account.id}` 
      class = "btn btn-warning"
