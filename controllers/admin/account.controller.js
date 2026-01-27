@@ -86,3 +86,23 @@ module.exports.editPatch = async (req, res) => {
   }
   res.redirect(req.get("Referer"))
 }
+// [GET]: /admin/accounts/detail/:id
+module.exports.detail = async (req, res) => {
+  try{
+  const id = req.params.id
+  const account = await Account.findOne({_id:id, deleted:false}).select("-password -token")
+  const roles = await Role.find({deleted:false})
+  for(const role of roles){
+    if(account.role_id == role.id){
+      account.role = role.title
+    }
+  }
+  res.render("admin/pages/accounts/detail", {
+    pageTitle: "Chi tiết tài khoản",
+    account: account,
+  })
+  }
+  catch(error){
+    res.redirect(`${systemConfig.prefixAdmin}/accounts`)
+  }
+}

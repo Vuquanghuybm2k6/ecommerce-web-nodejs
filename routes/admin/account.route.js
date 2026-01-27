@@ -20,4 +20,5 @@ router.patch(
   validate.editPatch,
   uploadCloud.upload,
   controller.editPatch)
+router.get("/detail/:id", controller.detail)
 module.exports = router
