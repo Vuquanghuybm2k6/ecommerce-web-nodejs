@@ -3,8 +3,20 @@ const systemConfig = require("../../config/system")
 const md5 = require("md5")
 // [GET]: /admin/auth/login
 module.exports.login = async (req, res) => {
-  res.render("admin/pages/auth/login.pug", {
-    pageTitle: "Trang đăng nhập",
+  if (req.cookies.token) { // nếu người dùng đã đăng nhập và cố tình truy cập đến trang đăng nhập thì ta sẽ kiểm tra token của họ xem có trong cookie ko
+    const user = await Account.findOne({ // nếu có thì kiểm tra xem token đấy có hợp lệ k bởi vì người dùng có thể thay đổi cookie
+      token: req.cookies.token,
+      deleted: false,
+      status: "active"
+    })
+    if (user) {
+      return res.redirect(`${systemConfig.prefixAdmin}/dashboard`)
+    } else { // không hợp lệ thì xóa token trong cookie luôn
+      res.clearCookie("token")
+    }
+  }
+  res.render("admin/pages/auth/login", {
+    pageTitle: "Trang đăng nhập"
   })
 }
 // [POST]: /admin/auth/login
