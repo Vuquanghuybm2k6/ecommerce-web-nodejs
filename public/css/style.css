@@ -44,6 +44,7 @@
 }
 /* End box-head */
 .product-item {
+  position: relative; 
   border: 1px solid #eee;
   border-radius: 8px;
   overflow: hidden;
@@ -62,6 +63,18 @@
   height: 180px;
   object-fit: contain;
   background-color: #f9f9f9; /* thêm nền cho đẹp */
+}
+
+.inner-featured{
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: green;
+  color: white;
+  padding: 3px 6px;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 8px; 
 }
 
 .inner-content {
