@@ -1,30 +1,31 @@
 extends ../../layouts/default.pug
 include ../../mixins/alert.pug
 block main 
-  +alert-success(5000)
-  +alert-error(5000)
-  h1 Thêm mới nhóm quyền
-  form(
-    action = `${prefixAdmin}/roles/create`
-    method = "POST"
-  )
-    div(class = "form-group")
-      label(for = "title") Tiêu đề
-      input(
-        type = "text" 
-        class = "form-control" 
-        id = "title" 
-        name = "title" 
-        required
-        ) 
-    div(class = "form-group")
-      label(for = "desc") Mô tả ngắn
-      textarea(
-        type = "text" 
-        class = "form-control textarea-mce" 
-        id = "description" 
-        name = "description" 
-        rows = "5"
-        )
-    div(class = "form-group")
-      button(type="submit" class = "btn btn-primary") Tạo mới 
+  if(role.permissions.includes("roles_create"))
+    +alert-success(5000)
+    +alert-error(5000)
+    h1 Thêm mới nhóm quyền
+    form(
+      action = `${prefixAdmin}/roles/create`
+      method = "POST"
+    )
+      div(class = "form-group")
+        label(for = "title") Tiêu đề
+        input(
+          type = "text" 
+          class = "form-control" 
+          id = "title" 
+          name = "title" 
+          required
+          ) 
+      div(class = "form-group")
+        label(for = "desc") Mô tả ngắn
+        textarea(
+          type = "text" 
+          class = "form-control textarea-mce" 
+          id = "description" 
+          name = "description" 
+          rows = "5"
+          )
+      div(class = "form-group")
+        button(type="submit" class = "btn btn-primary") Tạo mới 

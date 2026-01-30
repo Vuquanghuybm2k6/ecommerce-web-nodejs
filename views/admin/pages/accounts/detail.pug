@@ -1,24 +1,25 @@
 extends ../../layouts/default.pug
 block main 
-  if (account.avatar)
-    div(class="mb-4")
-      img(src=account.avatar style="width: 100px")
-  if (account.fullName)
-    div(class="mb-4") <b>Họ và tên:</b> #{account.fullName}
-  if (account.email)
-    div(class="mb-4") <b>Email:</b> #{account.email}
-  if (account.phone)
-    div(class="mb-4") <b>Số điện thoại:</b> #{account.phone}
-  if (account.status)
-    div(class="mb-4")
-      span <b>Trang thái:</b>
-      if (account.status === "active")
-        span(class="badge badge-success") Hoạt động
-      else
-        span(class="badge badge-danger") Dừng hoạt động
-  if(account.role)
-    div(class="mb-4") <b>Quyền:</b> #{account.role}
-  a(
-     href=`${prefixAdmin}/accounts/edit/${account.id}` 
-     class = "btn btn-warning"
-     ) Chỉnh sửa
+  if(role.permissions.includes("accounts_view"))
+    if (account.avatar)
+      div(class="mb-4")
+        img(src=account.avatar style="width: 100px")
+    if (account.fullName)
+      div(class="mb-4") <b>Họ và tên:</b> #{account.fullName}
+    if (account.email)
+      div(class="mb-4") <b>Email:</b> #{account.email}
+    if (account.phone)
+      div(class="mb-4") <b>Số điện thoại:</b> #{account.phone}
+    if (account.status)
+      div(class="mb-4")
+        span <b>Trang thái:</b>
+        if (account.status === "active")
+          span(class="badge badge-success") Hoạt động
+        else
+          span(class="badge badge-danger") Dừng hoạt động
+    if(account.role)
+      div(class="mb-4") <b>Quyền:</b> #{account.role}
+    a(
+      href=`${prefixAdmin}/accounts/edit/${account.id}` 
+      class = "btn btn-warning"
+      ) Chỉnh sửa
