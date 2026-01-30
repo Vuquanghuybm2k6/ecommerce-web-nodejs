@@ -84,7 +84,18 @@ module.exports.changeMulti = async (req,res) =>{
       req.flash("success",`Cập nhật trạng thái thành công ${ids.length} sản phẩm`)
       break
     case "delete-all":
-      await Product.updateMany({_id:{$in:ids}},{deleted: true, deletedAt: new Date()})
+      await Product.updateMany(
+        {
+          _id:{$in:ids}
+        },
+        {
+          deleted: true,
+           deletedBy: {
+            account_id : res.locals.user.id,
+            deletedAt: new Date()
+           }
+          }
+        )
       break
     case "change-position":
       for(const item of ids){
@@ -101,7 +112,18 @@ module.exports.changeMulti = async (req,res) =>{
 //[PATCH]: /admin/products/delete/:id
 module.exports.delete = async (req,res)=>{
   const id = req.params.id
-  await Product.updateOne({_id:id}, {deleted:true, deletedAt: new Date()}) 
+  await Product.updateOne(
+    {
+      _id:id
+    },
+     {
+      deleted:true,
+       deletedAt: {
+        account_id : res.locals.user.id,
+        deletedAt: new Date()
+       }
+      }
+    ) 
   // Không được gộp chung hai cái trường deleted và deletedAt vào chung 1 object vì mongodb cần biết cập nhật những document nào
   // cập nhật những trường nào
   res.redirect(req.get("Referer"))
