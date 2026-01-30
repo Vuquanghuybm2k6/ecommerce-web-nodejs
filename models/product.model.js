@@ -34,6 +34,12 @@ const productSchema = new mongoose.Schema({
     account_id: String,
     deletedAt: Date,
   },
+  updatedBy : [ // trường updatedBy phải là một mảng bởi vì một bản ghi có thể sẽ được update nhiều lần
+    {
+      account_id: String,
+      updatedAt: Date
+    }
+  ]
 }, {
   timestamps: true // khi thêm trường này thì mongoose sẽ tự động thêm 2 trường createdAt và updatedAt
 });

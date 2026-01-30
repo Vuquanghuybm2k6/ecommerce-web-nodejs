@@ -44,6 +44,7 @@ block main
               th Vị trí
               th Trạng thái
               th Người tạo
+              th Người cập nhật
               th Hành động
           tbody 
             each item, index in products
@@ -88,6 +89,12 @@ block main
                   p #{item.fullName}
                   p 
                     +formatDate(item.createdBy.createdAt)
+                td 
+                  - const updatedBy = item.updatedBy[item.updatedBy.length-1]
+                  if(updatedBy)
+                    p #{updatedBy.fullName}
+                    p 
+                      +formatDate(updatedBy.updatedAt)
                 td 
                   a(class = "btn btn-secondary btn-sm mr-1" href =`${prefixAdmin}/products/detail/${item.id}`) Chi tiết
                   if(role.permissions.includes("products_edit"))

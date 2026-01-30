@@ -39,13 +39,25 @@ module.exports.index = async (req,res) =>{
     sort.position = "desc"
   }
   // End Sort
-
   const products = await Product.find(find).limit(pagination.limitItem).skip(pagination.skip).sort(sort)
   for(const product of products){ 
+    // Lấy ra thông tin người tạo
     const user  = await Account.findOne({_id: product.createdBy.account_id}) // từ account_id trong createdBy ở model product lấy ra id trong account
     if(user){
       product.fullName = user.fullName // gán biến fullName trong account vào product
     }
+     // Lấy ra thông tin người cập nhật gần nhất
+   if (product.updatedBy && product.updatedBy.length > 0) {
+    const lastIndex = product.updatedBy.length - 1
+    const lastUpdated = product.updatedBy[lastIndex]
+
+    if (lastUpdated) {
+      const userUpdated = await Account.findOne({_id: lastUpdated.account_id})
+      if (userUpdated) {
+        lastUpdated.fullName = userUpdated.fullName
+      }
+    }
+  }
   }
   res.render("admin/pages/products/index.pug",
     {
@@ -61,10 +73,17 @@ module.exports.index = async (req,res) =>{
 module.exports.changeStatus = async (req,res) =>{
   const id = req.params.id
   const status = req.params.status
+  const updatedBy = {
+    account_id: res.locals.user.id,
+    updatedAt: new Date()
+  }
   await Product.updateOne({
     _id: id},
   {
-    status: status
+    $set: { status }, // MongoDB KHÔNG cho trộn: field thường (status) và operator ($push)
+    $push: {
+      updatedBy : updatedBy
+    }
   })
   req.flash("success","Cập nhật trạng thái thành công")
   res.redirect(req.get("Referer"))
@@ -73,14 +92,18 @@ module.exports.changeStatus = async (req,res) =>{
 module.exports.changeMulti = async (req,res) =>{
   const type = req.body.type
   const ids = req.body.ids.split(", ").map(id =>id.trim()) 
+  const updatedBy = {
+    account_id: res.locals.user.id,
+    updatedAt: new Date()
+  }
   switch(type){
     case "active":
-      await Product.updateMany({_id:{$in:ids}},{status: "active"})
+      await Product.updateMany({_id:{$in:ids}},{$set :{status: "active"}, $push: {updatedBy : updatedBy}})
       req.flash("success",`Cập nhật trạng thái thành công ${ids.length} sản phẩm`)
 
       break
     case "inactive":
-      await Product.updateMany({_id:{$in:ids}}, {status: "inactive"})
+      await Product.updateMany({_id:{$in:ids}}, {$set:{status: "inactive"}, $push: {updatedBy : updatedBy}})
       req.flash("success",`Cập nhật trạng thái thành công ${ids.length} sản phẩm`)
       break
     case "delete-all":
@@ -101,7 +124,7 @@ module.exports.changeMulti = async (req,res) =>{
       for(const item of ids){
         let [id, position] = item.split("-")
         position = parseInt(position)
-        await Product.updateOne({_id: id},{position: position})
+        await Product.updateOne({_id: id},{$set:{position: position}, $push: {updatedBy: updatedBy}})
       }
       break
     default:
@@ -118,7 +141,7 @@ module.exports.delete = async (req,res)=>{
     },
      {
       deleted:true,
-       deletedAt: {
+       deletedBy: {
         account_id : res.locals.user.id,
         deletedAt: new Date()
        }
@@ -181,7 +204,20 @@ module.exports.editPatch = async (req,res) =>{
     req.body.thumbnail = `/uploads/${req.file.filename}`
   }
   try{
-    await Product.updateOne({_id:id},req.body)
+    const updatedBy = {
+    account_id: res.locals.user.id,
+    updatedAt: new Date()
+    }
+    await Product.updateOne(
+      {
+        _id:id
+      },{
+      $set: req.body, // $set: gán, cập nhật giá trị cho field
+      $push: { // $push: thêm phần tử vào mảng, ko ghi đè giá trị cũ
+        updatedBy : updatedBy
+      }
+  }
+    )
     req.flash("success", "Cập nhật thành công sản phẩm")
   }
   catch(error){
@@ -193,7 +229,7 @@ module.exports.editPatch = async (req,res) =>{
 module.exports.detail = async (req,res)=>{
   try{
     const id = req.params.id
-    const product =  await Product.findOne({_id: id}, {deleted: false})
+    const product =  await Product.findOne({_id: id, deleted: false})
     res.render("admin/pages/products/detail",{
       pageTitle: "Chi tiết sản phẩm",
       product: product
