@@ -5,6 +5,7 @@ const paginationHelper = require("../../helper/pagination")
 const systemConfig = require("../../config/system")
 const ProductCategory = require("../../models/product-category.model")
 const createTreeHelper = require("../../helper/createTree")
+const Account = require("../../models/account.model")
 // [GET]: /admin/products
 module.exports.index = async (req,res) =>{
   const filterStatus = filterStatusHelper(req.query)
@@ -40,6 +41,12 @@ module.exports.index = async (req,res) =>{
   // End Sort
 
   const products = await Product.find(find).limit(pagination.limitItem).skip(pagination.skip).sort(sort)
+  for(const product of products){ 
+    const user  = await Account.findOne({_id: product.createdBy.account_id}) // từ account_id trong createdBy ở model product lấy ra id trong account
+    if(user){
+      product.fullName = user.fullName // gán biến fullName trong account vào product
+    }
+  }
   res.render("admin/pages/products/index.pug",
     {
       pageTitle: "Danh sách sản phẩm",
@@ -120,6 +127,9 @@ module.exports.createPost = async (req,res)=>{
   else{
     const countProduct = await Product.countDocuments()
     req.body.position = countProduct+1 
+  }
+  req.body.createdBy = { // gán thông tin dữ liệu người tạo sản phẩm trước khi lưu vào db
+    account_id : res.locals.user.id // res.locals.user lấy từ bên phía middleware khi đăng nhập
   }
   const product = new Product(req.body)
   await product.save()

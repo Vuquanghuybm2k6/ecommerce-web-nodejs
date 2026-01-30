@@ -19,11 +19,21 @@ const productSchema = new mongoose.Schema({
     slug: "title",
     unique: true
   },
+  createdBy: {
+    account_id: String,
+    createdAt: {
+      type: Date,
+      default: Date.now()
+    }
+  },
   deleted: {
     type: Boolean,
     default: false
   },
-  deletedAt: Date,
+  deletedBy: {
+    account_id: String,
+    deletedAt: Date,
+  },
 }, {
   timestamps: true // khi thêm trường này thì mongoose sẽ tự động thêm 2 trường createdAt và updatedAt
 });

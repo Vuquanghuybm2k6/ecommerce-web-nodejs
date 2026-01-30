@@ -4,6 +4,9 @@ require('dotenv').config()
 const port = process.env.PORT
 const path = require("path") 
 const systemConfig = require("./config/system")
+  
+const moment = require("moment")
+app.locals.moment = moment
 
 // Flash
 const  session = require('express-session')
@@ -42,10 +45,14 @@ const mongoose = require("mongoose")
 var slug = require("mongoose-slug-updater")
 mongoose.plugin(slug)
 
+
 var methodOverride = require('method-override')
 app.use(methodOverride('_method'))
+
+
 const bodyParser = require('body-parser')
 app.use(bodyParser.urlencoded({extended : false}))
+
 route(app)
 routeAdmin(app)
 

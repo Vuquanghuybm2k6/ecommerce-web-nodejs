@@ -4,7 +4,8 @@ const createTree = (arr, parentId = "") =>{
     arr.forEach((item)=>{
       if(item.parent_id === parentId){
         ++count
-        const newItem = item
+        const newItem = { ...item._doc }
+       // _doc là nơi chứa dữ liệu thật của document trong Mongoose, phải dùng _doc khi ta thêm field mới vào trong document sau khi query
         newItem.index = count
         const children = createTree(arr, item.id)
         if(children.length > 0){
@@ -18,6 +19,6 @@ const createTree = (arr, parentId = "") =>{
 
 module.exports.tree = (arr, parentId = "") =>{ 
   count = 0
-  const tree = createTree(arr, parentId = "")
+  const tree = createTree(arr, parentId)
   return tree
 }  

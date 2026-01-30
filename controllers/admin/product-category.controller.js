@@ -1,6 +1,7 @@
 const ProductCategory = require("../../models/product-category.model")
 const systemConfig = require("../../config/system")
 const createTreeHelper = require("../../helper/createTree")
+const Account = require("../../models/account.model")
 // [GET]: /admin/products-category
 module.exports.index = async (req, res) => {
   const find = {
@@ -10,6 +11,12 @@ module.exports.index = async (req, res) => {
     position: "asc"
   })
   const newRecords = createTreeHelper.tree(records)
+  for(const newRecord of newRecords){
+    const user = await Account.findOne({_id: newRecord.createdBy.account_id})
+    if(user){
+      newRecord.fullName = user.fullName
+    }
+  }
   res.render("admin/pages/products-category/index.pug", {
     pageTitle: "Danh mục sản phẩm",
     records: newRecords
@@ -38,6 +45,9 @@ module.exports.createPost = async (req, res) => {
       deleted: false
     })
     req.body.position = countCategory + 1
+  }
+  req.body.createdBy = { // lưu id người dùng vào trong accout_id từ biến user trong middleware
+    account_id : res.locals.user.id
   }
   const record = new ProductCategory(req.body)
   await record.save()
