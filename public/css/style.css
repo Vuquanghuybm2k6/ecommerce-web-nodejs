@@ -23,6 +23,7 @@
   margin-left: 20px;
 }
 /* End Header */
+
 /* Footer */
 .footer{
     background: #333;
@@ -31,7 +32,7 @@
     padding: 10px;
 } 
 /* End Footer */
-/* box-head */
+
 /* Box-head */
 .box-head{
     margin-bottom: 30px;
@@ -147,3 +148,108 @@
 }
 
 /* End sub-menu */
+
+/* Product detail */
+.product-detail {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Thumbnail */
+.inner-thumb {
+  width: 100%;
+  border: 1px solid #e5e5e5;
+  padding: 10px;
+  background: #fff;
+}
+
+.inner-thumb img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Title */
+.inner-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+/* Category */
+.inner-category {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.inner-category span {
+  font-weight: 600;
+  margin-right: 5px;
+}
+
+.inner-category a {
+  color: #0d6efd;
+  text-decoration: none;
+}
+
+.inner-category a:hover {
+  text-decoration: underline;
+}
+
+/* Prices */
+.inner-price-new {
+  font-size: 24px;
+  font-weight: 700;
+  color: #008000;
+  margin-bottom: 5px;
+}
+
+.inner-price-old {
+  font-size: 16px;
+  color: #DC3545;
+  text-decoration: line-through;
+  margin-bottom: 10px;
+}
+
+/* Discount */
+.inner-percent {
+  font-size: 14px;
+  color: #198754;
+  margin-bottom: 10px;
+}
+
+.inner-percent span {
+  font-weight: 900;
+}
+
+/* Stock */
+.inner-stock {
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.inner-stock span {
+  font-weight: 700;
+  color: #0d6efd;
+}
+
+/* Add to cart */
+form {
+  max-width: 200px;
+}
+
+form input[type="number"] {
+  text-align: center;
+}
+
+/* Description */
+.inner-desc {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.inner-desc img {
+  max-width: 100%;
+}
+
+/* End Product detail */

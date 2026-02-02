@@ -2,7 +2,7 @@ let count = 0
 const createTree = (arr, parentId = "") =>{
     const tree = []
     arr.forEach((item)=>{
-      if(item.parent_id === parentId){
+      if(item.parent_id == parentId){
         ++count
         const newItem = { ...item._doc }
        // _doc là nơi chứa dữ liệu thật của document trong Mongoose, phải dùng _doc khi ta thêm field mới vào trong document sau khi query
