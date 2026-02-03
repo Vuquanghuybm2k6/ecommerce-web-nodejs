@@ -42,7 +42,7 @@ block main
                       )
                   td #{item.totalPrice}$
                   td
-                    a(href = `cart/delete/item.product_id` class = "btn btn-danger") Xóa
+                    a(href = `cart/delete/${item.product_id}` class = "btn btn-danger") Xóa
             else 
               p Không có sản phẩm nào trong giỏ hàng
         h3(class = "text-right") Tổng đơn hàng : #{cartDetail.totalPrice}$

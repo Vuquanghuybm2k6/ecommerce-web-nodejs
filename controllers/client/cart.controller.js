@@ -57,3 +57,19 @@ module.exports.addPost = async (req,res) =>{
   req.flash("success","Them sản phẩm vào giỏ hàng thành công")
   res.redirect(req.get("Referer"))
 }
+// [GET]: /delete/:productId
+module.exports.delete = async (req,res)=>{
+  const productId = req.params.productId
+  const cartId = req.cookies.cartId
+  await Cart.updateOne({
+    _id:cartId
+  },{
+    $pull:{
+      products: {
+        'product_id': productId
+      }
+    }
+  })
+  req.flash("success", "Đã xóa sản phẩm khỏi giỏ hàng!")
+  res.redirect(req.get("Referer"))
+}
