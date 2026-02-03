@@ -52,3 +52,19 @@ module.exports.order = async (req,res)=>{
   })
   res.redirect(`/checkout/success/${order.id}`)
 }
+// [GET]: /checkout/success/:orderId
+module.exports.success = async (req,res)=>{
+  const orderId =req.params.orderId
+  const order = await Order.findOne({_id: orderId})
+  for(const product of order.products){
+    const productInfo = await Product.findOne({_id:product.product_id}).select("title thumbnail")
+    product.productInfo = productInfo
+    product.priceNew = productHelper.priceNewProduct(product)
+    product.totalPrice = product.priceNew * product.quantity
+  }
+  order.totalPrice = order.products.reduce((sum,item)=>sum+item.totalPrice,0)
+  res.render("client/pages/checkout/success",{
+    pageTitle: "Đặt hàng thành công",
+    order: order
+  })
+}
