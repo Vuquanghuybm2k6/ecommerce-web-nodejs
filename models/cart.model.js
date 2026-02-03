@@ -8,7 +8,7 @@ const cartSchema = new mongoose.Schema({
     }
   ]
 }, {
-  timestamps: true // khi thêm trường này thì mongoose sẽ tự động thêm 2 trường createdAt và updatedAt
+  timestamps: true
 });
 const Cart = mongoose.model('Cart', cartSchema, 'carts')
 module.exports = Cart
