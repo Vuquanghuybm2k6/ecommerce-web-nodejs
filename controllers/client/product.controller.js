@@ -1,6 +1,6 @@
 const Product = require("../../models/product.model")
-const productHelper = require("../../helper/product")
-const productsCategoryHelper = require("../../helper/products-category")
+const productHelper = require("../../helpers/product")
+const productsCategoryHelper = require("../../helpers/products-category")
 const ProductCategory = require("../../models/product-category.model")
 // [GET]: /products
 module.exports.index = async (req, res) => {

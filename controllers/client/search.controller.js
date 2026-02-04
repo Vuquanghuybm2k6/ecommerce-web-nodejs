@@ -1,5 +1,5 @@
 const Product = require("../../models/product.model")
-const productHelper = require("../../helper/product")
+const productHelper = require("../../helpers/product")
 // [GET]: /search
 module.exports.index = async (req, res) => {
   const keyword = req.query.keyword

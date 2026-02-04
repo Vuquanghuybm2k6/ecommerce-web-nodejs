@@ -1,7 +1,7 @@
 const Order = require("../../models/order.model")
 const Cart = require("../../models/cart.model")
 const Product = require("../../models/product.model")
-const productHelper = require("../../helper/product")
+const productHelper = require("../../helpers/product")
 // [GET]: /checkout
 module.exports.index = async (req,res)=>{
   const cartId = req.cookies.cartId

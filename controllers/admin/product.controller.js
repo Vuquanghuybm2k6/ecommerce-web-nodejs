@@ -1,10 +1,10 @@
 const Product =require("../../models/product.model")
-const filterStatusHelper = require("../../helper/filterStatus")
-const searchHelper = require("../../helper/search")
-const paginationHelper = require("../../helper/pagination")
+const filterStatusHelper = require("../../helpers/filterStatus")
+const searchHelper = require("../../helpers/search")
+const paginationHelper = require("../../helpers/pagination")
 const systemConfig = require("../../config/system")
 const ProductCategory = require("../../models/product-category.model")
-const createTreeHelper = require("../../helper/createTree")
+const createTreeHelper = require("../../helpers/createTree")
 const Account = require("../../models/account.model")
 // [GET]: /admin/products
 module.exports.index = async (req,res) =>{
