@@ -5,6 +5,7 @@ include ../../mixins/moment.pug
 block main 
   if(role.permissions.includes("products-category_view"))
     +alert-success(5000)
+    +alert-error(5000)
     h1 Danh mục sản phẩm
     .card 
       .card-header Danh sách sản phẩm
@@ -29,4 +30,11 @@ block main
               th Hành động
           tbody 
             +table-tree(records) 
+    form(
+      action = ``
+      data-path = `${prefixAdmin}/products-category/delete`
+      method = "POST"
+      id = "form-delete-category"
+    )
+    script(src = "/admin/js/products-category.js")
     

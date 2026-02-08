@@ -55,19 +55,20 @@ mixin table-tree(items, level = 1)
           +formatDate(item.createdBy.createdAt)
       td
         a(
-          href = `${prefixAdmin}/products-category/detail/${item.id}`
+          href = `${prefixAdmin}/products-category/detail/${item._id}`
           class="btn btn-secondary btn-sm"
           ) Chi tiết
         if(role.permissions.includes("products-category_edit"))
           a(
-            href = `${prefixAdmin}/products-category/edit/${item.id}`
+            href = `${prefixAdmin}/products-category/edit/${item._id}`
             class="btn btn-warning btn-sm ml-1" 
             ) Sửa
         if(role.permissions.includes("products-category_delete"))
           button(
             class="btn btn-danger btn-sm ml-1"
             button-delete 
-            data-id = item.id 
+            data-id = item._id 
+            type = "button"
             ) Xóa     
     if (item.children && item.children.length > 0)
       +table-tree(item.children, level + 1) 
