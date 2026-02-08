@@ -3,12 +3,15 @@ const md5 = require("md5")
 const ForgotPassword = require("../../models/forgot-password.model")
 const generateHelper = require("../../helpers/generate")
 const sendMailHelper = require("../../helpers/sendMail")
+const Cart = require("../../models/cart.model")
+
 // [GET]: /user/register
 module.exports.register = (req, res) => {
   res.render("client/pages/user/register", {
     pageTitle: "Đăng kí tài khoản",
   })
 }
+
 // [POST]: /user/register
 module.exports.registerPost = async (req, res) => {
   const emailExit = await User.findOne({email: req.body.email, deleted: false})
@@ -25,13 +28,15 @@ module.exports.registerPost = async (req, res) => {
   }
   res.redirect(req.get("Referer"))
 }
+
 // [GET]: /user/login
 module.exports.login = (req, res) => {
   res.render("client/pages/user/login", {
     pageTitle: "Đăng nhập tài khoản",
   })
 }
-// [POST]: /user/register
+
+// [POST]: /user/login
 module.exports.loginPost = async (req, res) => {
   const email = req.body.email
   const password = md5(req.body.password)
@@ -49,13 +54,17 @@ module.exports.loginPost = async (req, res) => {
     return res.redirect(req.get("Referer"))
   }
   res.cookie("tokenUser",user.tokenUser)
+  await Cart.updateOne({_id: req.cookies.cart}, {user_id: user.id})
   res.redirect("/")
 }
+
 // [GET]: /user/logout
 module.exports.logout = (req, res) => {
   res.clearCookie("tokenUser")
+  res.clearCookie("cartId")
   res.redirect("/")
 }
+
 // [GET]: /user/password/forgot
 module.exports.forgotPassword = (req, res) => {
   res.render("client/pages/user/forgot-password",{
@@ -63,6 +72,7 @@ module.exports.forgotPassword = (req, res) => {
   }
   )
 }
+
 // [POST]: /user/password/forgot
 module.exports.forgotPasswordPost = async (req, res) => {
   const email = req.body.email
@@ -90,6 +100,7 @@ module.exports.forgotPasswordPost = async (req, res) => {
   sendMailHelper.sendMail(email,subject,html)
   res.redirect(`/user/password/otp?email=${email}`)
 }
+
 // [GET]: /user/password/otp
 module.exports.otpPassword = async (req, res) => {
   const email = req.query.email
@@ -99,6 +110,7 @@ module.exports.otpPassword = async (req, res) => {
   }
   )
 }
+
 // [POST]: /user/password/otp
 module.exports.otpPasswordPost = async (req, res) => {
   const email = req.body.email
@@ -118,6 +130,7 @@ module.exports.otpPasswordPost = async (req, res) => {
   res.cookie("tokenUser", user.tokenUser)
   res.redirect(`/user/password/reset`)
 }
+
 // [GET]: /user/password/reset
 module.exports.resetPassword = async (req, res) => {
   res.render("client/pages/user/reset-password",{
@@ -125,6 +138,7 @@ module.exports.resetPassword = async (req, res) => {
   }
   )
 }
+
 // [POST]: /user/password/reset
 module.exports.resetPasswordPost = async (req, res) => {
   const password = req.body.password
@@ -137,6 +151,7 @@ module.exports.resetPasswordPost = async (req, res) => {
   req.flash("success", "Đổi mật khẩu thành công")
   res.redirect("/")
 }
+
 // [GET]: /user/info
 module.exports.info = async (req, res) => {
   const email = req.query.email
