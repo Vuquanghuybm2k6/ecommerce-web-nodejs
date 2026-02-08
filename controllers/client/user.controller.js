@@ -20,6 +20,7 @@ module.exports.registerPost = async (req, res) => {
     req.body.password = md5(req.body.password)
     const user = new User(req.body)
     await user.save()
+    req.flash("success","Đăng kí tài khoản thành công")
     res.cookie("tokenUser", user.tokenUser)
   }
   res.redirect(req.get("Referer"))
@@ -135,4 +136,16 @@ module.exports.resetPasswordPost = async (req, res) => {
   })
   req.flash("success", "Đổi mật khẩu thành công")
   res.redirect("/")
+}
+// [GET]: /user/info
+module.exports.info = async (req, res) => {
+  const email = req.query.email
+  const tokenUser = req.cookies.tokenUser
+  const user = await User.findOne({tokenUser: tokenUser}).select("-password -tokenUser")
+  res.render("client/pages/user/info",{
+    pageTitle: "Thông tin tài khoản",
+    email: email,
+    user: user
+  }
+  )
 }

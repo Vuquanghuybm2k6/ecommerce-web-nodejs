@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const controller = require("../../controllers/admin/my-account.controller.js");
 const multer = require('multer')
-const upload = multer() // ta xóa cái { storage: storageMulter() } 
+const upload = multer()
 const uploadCloud = require("../../middlewares/admin/uploadCoud.js");
 
 router.get("/", controller.index);
