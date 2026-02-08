@@ -57,6 +57,11 @@ app.use(bodyParser.urlencoded({extended : false}))
 route(app)
 routeAdmin(app)
 
+app.use((req,res)=>{
+  res.status(404).render("client/pages/errors/404",{
+    pagetitle: "404 Not Found"
+  })
+})
 
 app.locals.prefixAdmin = systemConfig.prefixAdmin // sử dụng trong các file pug
 
