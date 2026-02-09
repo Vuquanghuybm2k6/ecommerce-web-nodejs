@@ -1,17 +1,29 @@
 const Role = require("../../models/role.model")
 const systemConfig = require("../../config/system")
 const paginationHelper = require("../../helpers/pagination")
+const searchHelper = require("../../helpers/search")
 // [GET]: /admin/roles
 module.exports.index = async (req, res) => {
+  const find = {
+    deleted: false
+  }
+  // Pagination
   const totalItem = await Role.countDocuments({deleted: false})
   const pagination = paginationHelper(req.query, totalItem, {
     currentPage: 1,
     limitItem: 4
   })
+  // End Pagination
+
+  // Search
+  if(req.query.keyword){
+    const regex = searchHelper(req.query)
+    find.title = regex
+  }
+  // End Search
+
   const records = await Role
-  .find({
-    deleted: false
-  })
+  .find(find)
   .limit(pagination.limitItem)
   .skip(pagination.skip)
   res.render("admin/pages/roles/index.pug", {

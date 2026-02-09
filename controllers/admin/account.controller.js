@@ -3,17 +3,30 @@ const Role = require("../../models/role.model")
 const md5 = require("md5")
 const systemConfig = require("../../config/system")
 const paginationHelper = require("../../helpers/pagination")
+const searchHelper = require("../../helpers/search")
 // [GET]: /admin/accounts
 module.exports.index = async (req, res) => {
-  const totalItem = await Account.countDocuments({deleted: false})
+  const find = {
+    deleted: false
+  }
+
+  // Search
+  if(req.query.keyword){
+    const regex = searchHelper(req.query)
+    find.fullName = regex
+  }
+  // End Search
+
+  // Pagination
+  const totalItem = await Account.countDocuments(find)
   const pagination = paginationHelper(req.query, totalItem, {
     currentPage: 1,
     limitItem: 4
   })
+  // End Pagination
+
   const records = await Account
-  .find({
-    deleted: false
-  })
+  .find(find)
   .select("-password -token") // loại bỏ những trường không muốn gửi ra bên fe
   .limit(pagination.limitItem)
   .skip(pagination.skip)
