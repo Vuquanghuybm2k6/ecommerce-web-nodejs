@@ -241,3 +241,24 @@ module.exports.detail = async (req,res)=>{
     res.redirect(req.get("Referer"))
   }
 }
+// [GET]: /admin/products/update-position
+module.exports.update = async (req,res)=>{
+  const position = parseInt(req.params.position)
+  const id = req.params.id
+  const updatedBy = {
+    account_id: res.locals.user.id,
+    updatedAt: new Date()
+    }
+    await Product.updateOne(
+      {
+        _id:id
+      },{
+      $set: {position : position}, 
+      $push: { // $push: thêm phần tử vào mảng, ko ghi đè giá trị cũ
+        updatedBy : updatedBy
+      }
+  }
+    )
+  req.flash("success","Cập nhật vị trí thành công")
+  res.redirect(req.get("Referer"))
+}

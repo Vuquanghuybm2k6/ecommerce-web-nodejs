@@ -23,4 +23,5 @@ router.patch("/edit/:id",
   validate.editPatch,
   controller.editPatch)
 router.get("/detail/:id", controller.detail)
+router.get("/update-position/:id/:position", controller.update)
 module.exports = router

@@ -12,9 +12,6 @@ module.exports.general = async (req, res) => {
 // [PATCH]: /admin/settings/general
 module.exports.generalPatch = async (req, res) => {
   const settingGeneral = await SettingGeneral.findOne({})
-  if (req.file) {
-    req.body.logo = req.file.url // dùng url cho cloudinary 
-  }
   if(settingGeneral){
     await SettingGeneral.updateOne({_id: settingGeneral.id}, req.body)
   }

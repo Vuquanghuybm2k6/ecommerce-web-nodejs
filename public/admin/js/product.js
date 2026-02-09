@@ -35,3 +35,19 @@ if(buttonsDelete.length>0){
   })
 }
 // End Delete Item
+
+// Update Position
+const inputsPosition = document.querySelectorAll("input[name='position']") // muốn tìm theo thuộc tính thì phải viết vào trong ngoặc vuông
+if(inputsPosition.length > 0){
+  inputsPosition.forEach(input=>{
+    input.addEventListener("change", (e)=>{
+      e.preventDefault()
+      const productId = input.getAttribute("product-id")
+      const position = parseInt(input.value)
+      if(position>0){
+        window.location.href = `products/update-position/${productId}/${position}`
+      }
+    })
+  })
+}
+// End Update Position

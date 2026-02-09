@@ -57,7 +57,14 @@ block main
                 td #{item.title}
                 td #{item.price}$
                 td 
-                  input(value = item.position min ="1" name = "position" type ="number" style = "width: 60px")
+                  input(
+                    value = item.position 
+                    min ="1" 
+                    name = "position" 
+                    type ="number" 
+                    style = "width: 60px"
+                    product-id = item.id
+                    )
                 td
                   if(role.permissions.includes("products_edit")) 
                     if (item.status =="active")
