@@ -2,19 +2,40 @@ const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
 const productsCategoryHelper = require("../../helpers/products-category")
 const ProductCategory = require("../../models/product-category.model")
+const paginationHelper = require("../../helpers/pagination")
+const searchHelper = require("../../helpers/search")
 // [GET]: /products
 module.exports.index = async (req, res) => {
 
-  const products = await Product.find({
+  const find = {
     deleted: false,
     status: "active"
-  }).sort({
-    position: "desc"
-  })
+  }
+  // Search
+    if(req.query.keyword){
+      const regex = searchHelper(req.query)
+      find.title = regex
+    }
+  // End Search
+   
+  // Pagination
+  const totalItem = await Product.countDocuments(find)
+  const pagination = paginationHelper(req.query, totalItem, {
+      currentPage: 1,
+      limitItem: 6
+    })
+  // End Pagination
+
+  const products = await Product
+  .find(find)
+  .limit(pagination.limitItem)
+  .skip(pagination.skip)
+  .sort({position: "desc"})
   const newProducts = productHelper.priceNewProducts(products)
   res.render("client/pages/products/index", {
     pageTitle: "Danh sách sản phẩm",
-    products: newProducts
+    products: newProducts,
+    pagination: pagination
   })
 }
 // [GET]: /products/:slugCategory

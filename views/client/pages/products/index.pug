@@ -1,9 +1,11 @@
 extends ../../layouts/default.pug
 include ../../mixins/box-head.pug
 include ../../mixins/product-layout.pug
+include ../../mixins/pagination.pug
 block main 
   .container 
     .row 
       +box-head("Danh sách sản phẩm")
     +product-grid(products)
+    +pagination(pagination)
     

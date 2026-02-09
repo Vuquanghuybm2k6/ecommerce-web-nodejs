@@ -1,13 +1,23 @@
 const Role = require("../../models/role.model")
 const systemConfig = require("../../config/system")
+const paginationHelper = require("../../helpers/pagination")
 // [GET]: /admin/roles
 module.exports.index = async (req, res) => {
-  const records = await Role.find({
+  const totalItem = await Role.countDocuments({deleted: false})
+  const pagination = paginationHelper(req.query, totalItem, {
+    currentPage: 1,
+    limitItem: 4
+  })
+  const records = await Role
+  .find({
     deleted: false
   })
+  .limit(pagination.limitItem)
+  .skip(pagination.skip)
   res.render("admin/pages/roles/index.pug", {
     pageTitle: "Danh sách nhóm quyền",
-    records: records
+    records: records,
+    pagination: pagination
   })
 }
 // [GET]: /admin/roles/create

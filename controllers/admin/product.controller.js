@@ -30,6 +30,7 @@ module.exports.index = async (req,res) =>{
     limitItem: 4
   })
   // Paginate
+
   //  Sort
   const sort = {}
   if(req.query.sortKey && req.query.sortValue){
@@ -39,6 +40,7 @@ module.exports.index = async (req,res) =>{
     sort.position = "desc"
   }
   // End Sort
+  
   const products = await Product.find(find).limit(pagination.limitItem).skip(pagination.skip).sort(sort)
   for(const product of products){ 
     // Lấy ra thông tin người tạo

@@ -3,15 +3,16 @@ const systemConfig = require("../../config/system")
 const createTreeHelper = require("../../helpers/createTree")
 const Account = require("../../models/account.model")
 const mongoose = require("mongoose")
-
 // [GET]: /admin/products-category
 module.exports.index = async (req, res) => {
   const find = {
     deleted: false
   }
-  const records = await ProductCategory.find(find).sort({
-    position: "asc"
-  })
+
+  const records = await ProductCategory
+  .find(find)
+  .sort({position: "asc"})
+
   const newRecords = createTreeHelper.tree(records)
   for(const newRecord of newRecords){
     const user = await Account.findOne({_id: newRecord.createdBy.account_id})
@@ -21,7 +22,7 @@ module.exports.index = async (req, res) => {
   }
   res.render("admin/pages/products-category/index.pug", {
     pageTitle: "Danh mục sản phẩm",
-    records: newRecords
+    records: newRecords,
   })
 }
 

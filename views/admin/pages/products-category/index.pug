@@ -2,6 +2,7 @@ extends ../../layouts/default.pug
 include ../../mixins/alert.pug
 include ../../mixins/table-tree.pug
 include ../../mixins/moment.pug
+include ../../mixins/pagination.pug
 block main 
   if(role.permissions.includes("products-category_view"))
     +alert-success(5000)

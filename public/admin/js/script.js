@@ -32,6 +32,7 @@ if (formSearch) {
   })
 }
 // End Form Search
+
 // Pagination
 const buttonsPagination = document.querySelectorAll("[button-pagination]")
 if (buttonsPagination.length > 0) {

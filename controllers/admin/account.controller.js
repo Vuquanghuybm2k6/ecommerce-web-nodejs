@@ -2,11 +2,21 @@ const Account = require("../../models/account.model")
 const Role = require("../../models/role.model")
 const md5 = require("md5")
 const systemConfig = require("../../config/system")
+const paginationHelper = require("../../helpers/pagination")
 // [GET]: /admin/accounts
 module.exports.index = async (req, res) => {
-  const records = await Account.find({
+  const totalItem = await Account.countDocuments({deleted: false})
+  const pagination = paginationHelper(req.query, totalItem, {
+    currentPage: 1,
+    limitItem: 4
+  })
+  const records = await Account
+  .find({
     deleted: false
-  }).select("-password -token") // loại bỏ những trường không muốn gửi ra bên fe
+  })
+  .select("-password -token") // loại bỏ những trường không muốn gửi ra bên fe
+  .limit(pagination.limitItem)
+  .skip(pagination.skip)
   for (const record of records) {
     const role = await Role.findOne({
       _id: record.role_id,
@@ -16,7 +26,8 @@ module.exports.index = async (req, res) => {
   }
   res.render("admin/pages/accounts/index", {
     pageTitle: "Danh sách tài khoản",
-    records: records
+    records: records,
+    pagination: pagination
   })
 }
 // [GET]: /admin/accounts/create
