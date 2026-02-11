@@ -9,6 +9,7 @@ block main
       .col-8
         h1(class="text-center") Đăng ký tài khoản
         form(
+          enctype="multipart/form-data"
           action="/user/register"
           method="POST"
         )
@@ -44,7 +45,16 @@ block main
               style = "width: 680px"
               required
             )
-      
+          div(class = "form-group")
+            label(for = "avatar") Avatar
+            input(
+              type = "file"
+              class = "form-control-file"
+              id = "avatar"
+              name = "avatar"
+              accept = "image/*"
+              upload-image-input
+            )
           button(
             type="submit"
             class="btn btn-primary w-100"

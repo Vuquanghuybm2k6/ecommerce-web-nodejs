@@ -10,11 +10,6 @@ const userSchema = new mongoose.Schema({
   },
   phone: String,
   avatar: String,
-  role_id: String,
-  status: {
-    type:String,
-    default: "active"
-  },
   deleted: {
     type: Boolean,
     default: false

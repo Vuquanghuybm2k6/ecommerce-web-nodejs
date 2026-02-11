@@ -164,3 +164,45 @@ module.exports.info = async (req, res) => {
   }
   )
 }
+
+  // [GET]: /user/edit
+  module.exports.edit = async (req, res) => {
+    const tokenUser = req.cookies.tokenUser
+    const user = await User.findOne({tokenUser: tokenUser}).select("-password -tokenUser")
+    res.render("client/pages/user/edit",{
+      pageTitle: "Chỉnh sửa tài khoản",
+      user: user
+    }
+    )
+  }
+
+  // [PATCH]: /user/edit
+  module.exports.editPatch = async (req, res) => {
+    const tokenUser = req.cookies.tokenUser
+    const user = await User.findOne({tokenUser: tokenUser, deleted: false})
+    if (!user) {
+      return res.redirect("/user/login")
+    }
+    const emailExit = await User.findOne({
+      _id: {
+        $ne: user._id
+      }, 
+      email: req.body.email,
+      deleted: false
+    })
+    if (emailExit) {
+      req.flash("error", `Email ${req.body.email} đã tồn tại`)
+      return res.redirect(req.get("Referer"))
+    } else {
+      if (req.body.password) {
+        req.body.password = md5(req.body.password)
+      } else {
+        delete req.body.password
+      }
+      await User.updateOne({
+        _id: user._id
+      }, req.body)
+      req.flash("success", "Cập nhật tài khoản thành công")
+      return res.redirect(req.get("Referer"))
+    }
+  }
