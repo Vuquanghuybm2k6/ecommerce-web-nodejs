@@ -26,7 +26,7 @@ module.exports.registerPost = async (req, res) => {
     req.flash("success","Đăng kí tài khoản thành công")
     res.cookie("tokenUser", user.tokenUser)
   }
-  res.redirect(req.get("Referer"))
+  res.redirect("/")
 }
 
 // [GET]: /user/login

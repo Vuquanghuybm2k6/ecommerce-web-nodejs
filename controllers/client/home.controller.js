@@ -12,10 +12,11 @@ module.exports.index = async (req,res)=>{
     status : "active",
   }).limit(6).sort({position: "desc"}) // Lấy ra 6 sản phẩm mới nhất
   const newproductsFeatured  = productsHelper.priceNewProducts(productsFeatured)
+  const productsNewPrice  = productsHelper.priceNewProducts(productsNew)
   res.render("client/pages/home/index",{
     pageTitle: "Đây là trang chủ",
     productsFeatured: newproductsFeatured,
-    productsNew: productsNew
+    productsNew: productsNewPrice
   }
   )
 }

@@ -51,7 +51,7 @@ block main
                       img(src =item.productInfo.thumbnail, alt = item.productInfo.title width = "80px")
                     td #{item.productInfo.title}$
                     td #{item.priceNew}$
-                    td #{item.quantity}$
+                    td #{item.quantity}
                     td #{item.totalPrice}$
           if(order.products.length > 0)
             h3(class = "text-right") Tổng đơn hàng : #{order.totalPrice}$ 

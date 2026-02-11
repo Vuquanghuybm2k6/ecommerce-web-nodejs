@@ -1,10 +1,6 @@
 const mongoose = require("mongoose")
 const roleSchema = new mongoose.Schema({
   title: String,
-  product_category_id: {
-    type: String,
-    default: ""
-  },
   description: String,
   permissions: {
     type: Array,

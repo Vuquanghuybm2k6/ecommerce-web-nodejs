@@ -31,10 +31,10 @@ module.exports.index = async (req, res) => {
   .limit(pagination.limitItem)
   .skip(pagination.skip)
   .sort({position: "desc"})
-  const newProducts = productHelper.priceNewProducts(products)
+  const newPriceProducts = productHelper.priceNewProducts(products)
   res.render("client/pages/products/index", {
     pageTitle: "Danh sách sản phẩm",
-    products: newProducts,
+    products: newPriceProducts,
     pagination: pagination
   })
 }
@@ -53,11 +53,25 @@ module.exports.category = async (req, res) => {
       deleted : false,
       status: "active"
     }
-    const products = await Product.find(find).sort({position: "desc"})
+
+    // Pagination
+    const totalItem = await Product.countDocuments(find)
+    const pagination = paginationHelper(req.query, totalItem, {
+        currentPage: 1,
+        limitItem: 6
+      })
+    // End Pagination
+
+    const products = await Product
+    .find(find)
+    .limit(pagination.limitItem)
+    .skip(pagination.skip)
+    .sort({position: "desc"})
     const newPriceProducts = productHelper.priceNewProducts(products)
     res.render("client/pages/products/index", {
       pageTitle: category.title,
-      products: newPriceProducts
+      products: newPriceProducts,
+      pagination: pagination
     })
   }
   catch(error){

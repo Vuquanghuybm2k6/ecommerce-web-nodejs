@@ -6,7 +6,7 @@ block main
       h1(class="mb-4") #{category.title}
     if (category.thumbnail)
       div(class="mb-4")
-        img(src=product.thumbnail style="width: 100px")
+        img(src=category.thumbnail style="width: 100px")
     div(class = "mb-4") <b>Danh mục cha: </b> #{category.parent_title}
     if (category.status)
       div(class="mb-4")
