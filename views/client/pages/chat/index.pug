@@ -1,0 +1,42 @@
+extends ../../layouts/default.pug
+include ../../mixins/box-head.pug
+block main 
+  .section-products-featured.my-5
+    .container
+      .row
+        .col-12
+          +box-head("Chat")
+      .row
+        .col-12
+          .chat
+            .inner-body
+              .inner-incoming
+                .inner-name Em Yêu 
+                .inner-content 
+                  | Anh ơi, sang nhà em nha 
+              .inner-outgoing 
+                .inner-content 
+                  | OK e 
+              .inner-incoming
+                .inner-name Em Yêu 
+                .inner-content 
+                  | Nhanh nha anh
+              .inner-outgoing 
+                .inner-content 
+                  | Anh đến rồi
+              .inner-incoming
+                .inner-name Em Yêu 
+                .inner-content 
+                  | E ra đây
+            .inner-foot 
+              form(
+                class = "inner-form"
+                action = ""
+              )
+                input(
+                  type = "text"
+                  placeholder = "Nhập nội dung..."
+                  name = "content"
+                )
+                button 
+                  i.fa-solid.fa-paper-plane

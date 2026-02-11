@@ -1,0 +1,12 @@
+
+// [GET]: /chat
+module.exports.index = async (req,res)=>{
+  // SocketIO
+  _io.on('connection', (socket) => { // bắt sự kiện connect
+    console.log('a user connected', socket.id);
+  });  
+  // End SocketIO
+  res.render("client/pages/chat/index",{
+    pageTitle: "Chat",
+  })
+}
