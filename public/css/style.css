@@ -400,3 +400,13 @@ form input[type="number"] {
 .chat .inner-form button:hover {
   background: #006fd6;
 }
+
+/* emoji-picker */
+.tooltip{
+  visibility: hidden;
+}
+.tooltip.shown{
+  visibility: visible;
+  opacity: 1;
+}
+/* End emoji-picker */
