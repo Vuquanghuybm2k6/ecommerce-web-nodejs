@@ -6,18 +6,27 @@ module.exports.index = async (req,res)=>{
   const fullName = res.locals.user.fullName
   // SocketIO
   _io.once('connection', (socket) => { 
+    socket.userId = userId
+    socket.fullName = fullName
     socket.on("CLIENT_SEND_MESSAGE", async (content)=>{
       // Lưu vào db
       const chat = new Chat({
-        user_id: userId,
+        user_id: socket.userId,
         content: content
       })
       await chat.save()
       // Trả data về client
       _io.emit("SERVER_RETURN_MESSAGE",{
-        userId: userId,
-        fullName: fullName,
+        user_id: socket.userId,
+        fullName: socket.fullName,
         content: content
+      })
+    })
+    socket.on("CLIENT_SEND_TYPING", (type)=>{
+      socket.broadcast.emit("SERVER_RETURN_TYPING",{
+          userId: socket.userId,
+          fullName: socket.fullName,
+          type: type
       })
     })
   });  
