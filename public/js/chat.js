@@ -30,5 +30,13 @@ socket.on("SERVER_RETURN_MESSAGE", (data)=>{
   <div class = "inner-content">${data.content}</div>
   `
   body.appendChild(div)
+  body.scrollTop = body.scrollHeight // tự động scroll khi người dùng nhắn tin
 })
 // End SERVER_RETURN_MESSAGE
+
+// Scroll Chat To Button
+const bodyChat = document.querySelector(".chat .inner-body")
+if(bodyChat){
+  bodyChat.scrollTop = bodyChat.scrollHeight
+}
+// End Scroll Chat To Button
