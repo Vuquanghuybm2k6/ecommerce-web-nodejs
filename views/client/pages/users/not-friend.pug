@@ -23,9 +23,12 @@ block main
               div(class = "inner-buttons")
                 button(
                   class = "btn btn-sm btn-primary mr-1"
-                  button-add-friend = user.id
+                  btn-add-friend = user.id
                   ) Kết bạn
                 button(
                   class = "btn btn-sm btn-secondary mr-1"
-                  button-cancel-friend = user.id
-                  ) Hủy kết bạn
+                  btn-cancel-friend = user.id
+                  ) Hủy yêu cầu
+  block script 
+    script(src = "/js/chat.js" type ="module")
+    script(src = "/js/users.js" type ="module")
