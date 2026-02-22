@@ -23,3 +23,16 @@ if(listBtnCancelFriend.length>0){
   })
 }
 // End Delete Friend Request
+
+// Refuse Friend Request
+const listBtnRefuseFriend = document.querySelectorAll("[btn-refuse-friend]")
+if(listBtnRefuseFriend.length>0){
+  listBtnRefuseFriend.forEach(button=>{
+    button.addEventListener("click",()=>{
+      button.closest(".box-user").classList.add("refuse")
+      const userId = button.getAttribute("btn-refuse-friend")
+      socket.emit("CLIENT_REFUSE_FRIEND", userId)
+    })
+  })
+}
+// End Refuse Friend Request
