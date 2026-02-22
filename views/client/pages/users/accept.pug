@@ -12,7 +12,7 @@ block main
     .row 
       each user in users
         .col-6 
-          div(class = "box-user add")
+          div(class = "box-user")
             div(class = "inner-avatar")
               img(
                 src = (user.avatar?user.avatar:"https://media.dolenglish.vn/PUBLIC/MEDIA/2b2f1391-7dcd-4d41-b1eb-2273c8cd00de.jpg")
@@ -34,6 +34,11 @@ block main
                   btn-deleted-friend
                   disabled
                   ) Đã xóa
+                button(
+                  class = "btn btn-sm btn-primary mr-1"
+                  btn-accepted-friend
+                  disabled
+                  ) Đã chấp nhận
   block script 
     script(src = "/js/chat.js" type ="module")
     script(src = "/js/users.js" type ="module")
