@@ -76,6 +76,15 @@ module.exports = async (res) => {
           }
         })
       }
+      // Lấy độ dài acceptFriends của B và trả về cho B
+      const infoUserB = await User.findOne({
+        _id: userId
+      })
+      const lengthAcceptFriends = infoUserB.acceptFriends.length 
+      socket.broadcast.emit("SEVER_RETURN_LENGTH_ACCEPT_FRIEND", {
+        userId: userId,
+        lengthAcceptFriends: lengthAcceptFriends
+      })
     })
 
     // Người dùng từ chối kết bạn
