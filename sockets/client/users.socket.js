@@ -6,7 +6,7 @@ module.exports = async (res) => {
     // Người dùng gửi yêu cầu kết bạn
     socket.on("CLIENT_ADD_FRIEND", async (userId) => {
       const myUserId = res.locals.user.id
-      // Thêm Id của người dùng hiện tại vào trong mảng acceptFriend của người kia
+      // Thêm Id của A vào acceptFriends của B
       const existUserAInB = await User.findOne({
         _id: userId,
         acceptFriends: myUserId
@@ -20,7 +20,7 @@ module.exports = async (res) => {
           }
         })
       }
-      // Thêm ID của người kia vào trong acceptFriend của người dùng hiện tại
+      // Thêm ID của B vào requestFriends của A
       const existUserBInA = await User.findOne({
         _id: myUserId,
         requestFriends: userId
@@ -34,6 +34,15 @@ module.exports = async (res) => {
           }
         })
       }
+      // Lấy độ dài acceptFriends của B và trả về cho B
+      const infoUserB = await User.findOne({
+        _id: userId
+      })
+      const lengthAcceptFriends = infoUserB.acceptFriends.length 
+      socket.broadcast.emit("SEVER_RETURN_LENGTH_ACCEPT_FRIEND", {
+        userId: userId,
+        lengthAcceptFriends: lengthAcceptFriends
+      })
     })
 
     // Người dùng hủy gửi yêu cầu kết bạn
