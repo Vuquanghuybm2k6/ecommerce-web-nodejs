@@ -5,7 +5,7 @@ module.exports = async (res) => {
 
     // Người dùng gửi yêu cầu kết bạn
     socket.on("CLIENT_ADD_FRIEND", async (userId) => {
-      const myUserId = res.locals.user.id
+      const myUserId = res.locals.user.id // Id của A
       // Thêm Id của A vào acceptFriends của B
       const existUserAInB = await User.findOne({
         _id: userId,
@@ -39,9 +39,17 @@ module.exports = async (res) => {
         _id: userId
       })
       const lengthAcceptFriends = infoUserB.acceptFriends.length 
-      socket.broadcast.emit("SEVER_RETURN_LENGTH_ACCEPT_FRIEND", {
+      socket.broadcast.emit("SERVER_RETURN_LENGTH_ACCEPT_FRIEND", {
         userId: userId,
         lengthAcceptFriends: lengthAcceptFriends
+      })
+      // Lấy thông tin của A và trả về cho B
+      const infoUserA = await User.findOne({
+        _id: myUserId
+      }).select("id, fullName avatar")
+      socket.broadcast.emit("SERVER_RETURN_INFO_ACCEPT_FRIEND", {
+        userId: userId,
+        infoUserA: infoUserA
       })
     })
 
@@ -81,7 +89,7 @@ module.exports = async (res) => {
         _id: userId
       })
       const lengthAcceptFriends = infoUserB.acceptFriends.length 
-      socket.broadcast.emit("SEVER_RETURN_LENGTH_ACCEPT_FRIEND", {
+      socket.broadcast.emit("SERVER_RETURN_LENGTH_ACCEPT_FRIEND", {
         userId: userId,
         lengthAcceptFriends: lengthAcceptFriends
       })
@@ -111,7 +119,7 @@ module.exports = async (res) => {
       })
       if (existUserBInA) {
         await User.updateOne({
-          _id: myUserId
+          _id: userId
         }, {
           $pull: {
             requestFriends: myUserId
