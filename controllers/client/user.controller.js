@@ -54,12 +54,18 @@ module.exports.loginPost = async (req, res) => {
     return res.redirect(req.get("Referer"))
   }
   res.cookie("tokenUser",user.tokenUser)
+  await User.updateOne({_id:user.id}, {
+    statusOnline: "online"
+  })
   await Cart.updateOne({_id: req.cookies.cart}, {user_id: user.id})
   res.redirect("/")
 }
 
 // [GET]: /user/logout
-module.exports.logout = (req, res) => {
+module.exports.logout = async (req, res) => {
+  await User.updateOne({_id:res.locals.user.id}, {
+    statusOnline: "offline"
+  })
   res.clearCookie("tokenUser")
   res.clearCookie("cartId")
   res.redirect("/")
