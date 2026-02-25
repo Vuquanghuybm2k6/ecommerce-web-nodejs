@@ -22,7 +22,7 @@ block main
               div(class = "inner-name") #{user.fullName}
               div(class = "inner-buttons")
                 a(
-                  href = "a"
+                  href = `/chat/${user.roomChatId}`
                   class = "btn btn-sm btn-primary mr-1"
                   ) Nhắn tin
             div(
@@ -30,5 +30,4 @@ block main
               status = user.statusOnline
             ) <i class = "fa-solid fa-circle"></i>
   block script 
-    script(src = "/js/chat.js" type ="module")
     script(src = "/js/users.js" type ="module")
