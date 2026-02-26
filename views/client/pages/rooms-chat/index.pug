@@ -14,18 +14,19 @@ block main
           class = "btn btn-sm btn-success mr-1"
           ) Tạo phòng chat
     .row 
-      .col-6
-        div(class = "box-room")
-          div(class = "inner-avatar")
-            img(
-              src = ("https://media.dolenglish.vn/PUBLIC/MEDIA/2b2f1391-7dcd-4d41-b1eb-2273c8cd00de.jpg")
-              alt = ""
-            )
-          div(class = "inner-info")
-            div(class = "inner-name") Phong abc
-            div(class = "inner-buttons")
-              a(
-                href = `#`
-                class = "btn btn-sm btn-primary mr-1"
-                ) Nhắn tin
-        
+      each room in listRoomChat
+        .col-6
+          div(class = "box-room")
+            div(class = "inner-avatar")
+              img(
+                src = ("https://media.dolenglish.vn/PUBLIC/MEDIA/2b2f1391-7dcd-4d41-b1eb-2273c8cd00de.jpg")
+                alt =  room.title
+              )
+            div(class = "inner-info")
+              div(class = "inner-name") #{room.title}
+              div(class = "inner-buttons")
+                a(
+                  href = `/chat/${room.id}`
+                  class = "btn btn-sm btn-primary mr-1"
+                  ) Nhắn tin
+          
