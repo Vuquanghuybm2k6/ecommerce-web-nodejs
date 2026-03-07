@@ -5,14 +5,6 @@ const port = process.env.PORT
 const path = require("path") 
 const systemConfig = require("./config/system")
 
-const http = require('http');
-const { Server } = require("socket.io"); // nhúng
-// Socket io
-const server = http.createServer(app)
-const io = new Server(server);// khởi tạo
-global._io = io // đặt biến toàn cục io là _io, để có thể sử dụng trong các thư mục khác
-
-// End Socket io
 
 const moment = require("moment")
 app.locals.moment = moment
@@ -74,6 +66,6 @@ app.use((req,res)=>{
 
 app.locals.prefixAdmin = systemConfig.prefixAdmin // sử dụng trong các file pug
 
-server.listen(port, () => { // kết hợp dùng giữa app và socket io nên phải dùng biến server
+app.listen(port, () => { 
   console.log(`Example app listening on port ${port}`)
 })
