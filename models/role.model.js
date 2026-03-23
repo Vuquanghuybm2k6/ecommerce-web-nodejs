@@ -12,7 +12,7 @@ const roleSchema = new mongoose.Schema({
   },
   deletedAt: Date,
 }, {
-  timestamps: true // khi thêm trường này thì mongoose sẽ tự động thêm 2 trường createdAt và updatedAt
+  timestamps: true 
 });
 const Role = mongoose.model('Role', roleSchema, 'roles')
 module.exports = Role
