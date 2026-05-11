@@ -36,18 +36,15 @@ https://ecommerce-web-nodejs.vercel.app/admin/auth/login
 
 ## Home Page
 
-![Home]()
 <img width="1898" height="1028" alt="image" src="https://github.com/user-attachments/assets/efbc689a-975f-4e30-9888-2316fd73891c" />
 
 ## Product Detail
 
-![Product Detail](./screenshots/product-detail.png)
 <img width="1901" height="1037" alt="image" src="https://github.com/user-attachments/assets/157c3501-afab-4ebd-8ad5-ff410728f38a" />
 
 
 ## Admin Dashboard
 
-![Admin Dashboard](./screenshots/admin-dashboard.png)
 <img width="1897" height="1031" alt="image" src="https://github.com/user-attachments/assets/d1d485f6-39b0-4f4f-a223-d30ae4242a59" />
 
 
