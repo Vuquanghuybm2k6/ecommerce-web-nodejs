@@ -216,20 +216,22 @@ Pug Template Rendering
 ```bash
 project-product-management/
 │
-├── config/
-├── controllers/
-├── helpers/
-├── middlewares/
-├── models/
-├── public/
-├── routes/
-├── validates/
-├── views/
+├── config/          
+├── controllers/     
+├── helpers/         
+├── middlewares/     
+├── models/          
+├── public/         
+├── routes/          
+├── validates/       
+├── views/           
 │
 ├── .env
-├── index.js
+├── index.js         
 ├── package.json
+├── vercel.json
 └── README.md
+```
 ```
 
 ---
