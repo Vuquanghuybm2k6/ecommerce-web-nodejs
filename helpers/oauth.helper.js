@@ -18,7 +18,7 @@ passport.use(new GoogleStrategy({
         googleId: profile.id,
         authType: "google"
       })
-      await user.save()
+      await user.save() 
     }
 
     return done(null, user)
@@ -26,15 +26,4 @@ passport.use(new GoogleStrategy({
     return done(err, null)
   }
 }))
-
-passport.serializeUser((user, done) => done(null, user.id))
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id)
-    done(null, user)
-  } catch (err) {
-    done(err, null)
-  }
-})
-
 module.exports = passport
