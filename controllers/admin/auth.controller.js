@@ -45,6 +45,12 @@ module.exports.loginPost = async (req, res) => {
     return
   }
 
+  if (user.authType == "google") {
+    req.flash("error", "Tài khoản này sử dụng Google để đăng nhập")
+    res.redirect(req.get("Referer"))
+    return
+  }
+
   if (!bcrypt.compareSync(password, user.password)) {
     req.flash("error", "Sai mật khẩu")
     res.redirect(req.get("Referer"))

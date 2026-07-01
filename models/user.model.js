@@ -4,6 +4,11 @@ const userSchema = new mongoose.Schema({
   fullName: String,
   email: String,
   password: String,
+  googleId: String,
+  authType: {
+    type: String,
+    default: "local"
+  },
   status: {
     type: String,
     default: "active"

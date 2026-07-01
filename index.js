@@ -55,6 +55,9 @@ app.use(methodOverride('_method'))
 const bodyParser = require('body-parser')
 app.use(bodyParser.urlencoded({extended : false}))
 
+const passport = require("./helpers/oauth.helper")
+app.use(passport.initialize())
+
 route(app)
 routeAdmin(app)
 

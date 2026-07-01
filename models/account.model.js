@@ -8,6 +8,11 @@ const accountSchema = new mongoose.Schema({
     type: String,
     default: ()=> generate.generateRandomString(20)
   },
+  googleId: String,
+  authType: {
+    type: String,
+    default: "local"
+  },
   phone: String,
   avatar: String,
   role_id: String,
