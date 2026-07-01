@@ -1,7 +1,7 @@
 const Account = require("../../models/account.model")
 const AdminRefreshToken = require("../../models/admin-refresh-token.model")
 const systemConfig = require("../../config/system")
-const md5 = require("md5")
+const bcrypt = require("bcrypt")
 const jwtHelper = require("../../helpers/jwt.helper")
 const adminAuthHelper = require("../../helpers/admin-auth.helper")
 // [GET]: /admin/auth/login
@@ -38,23 +38,22 @@ module.exports.loginPost = async (req, res) => {
     req.flash("error", "Email không tồn tại")
     res.redirect(req.get("Referer"))
     return
-  } else {
-    if (md5(password) != user.password) {
-      req.flash("error", "Sai mật khẩu")
-      res.redirect(req.get("Referer"))
-      return
-    } else {
-      if (user.status == "inactive") {
-        req.flash("error", "Tài khoản này hiện đang bị khóa")
-        res.redirect(req.get("Referer"))
-        return
-      } else {
-        const tokens = await adminAuthHelper.createTokenPair(user, req)
-        adminAuthHelper.setAuthCookies(res, tokens)
-        res.redirect(`${systemConfig.prefixAdmin}/dashboard`)
-      }
-    }
   }
+  if (user.status == "inactive") {
+    req.flash("error", "Tài khoản này hiện đang bị khóa")
+    res.redirect(req.get("Referer"))
+    return
+  }
+
+  if (!bcrypt.compareSync(password, user.password)) {
+    req.flash("error", "Sai mật khẩu")
+    res.redirect(req.get("Referer"))
+    return
+  }
+
+  const tokens = await adminAuthHelper.createTokenPair(user, req)
+  adminAuthHelper.setAuthCookies(res, tokens)
+  res.redirect(`${systemConfig.prefixAdmin}/dashboard`)
 }
 // [POST]: /admin/auth/refresh-token
 module.exports.refreshToken = async (req, res) => {

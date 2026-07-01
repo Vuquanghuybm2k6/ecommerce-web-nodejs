@@ -1,5 +1,5 @@
 const User = require("../../models/user.model")
-const md5 = require("md5")
+const bcrypt = require("bcrypt")
 const ForgotPassword = require("../../models/forgot-password.model")
 const generateHelper = require("../../helpers/generate")
 const sendMailHelper = require("../../helpers/sendMail")
@@ -27,7 +27,7 @@ module.exports.registerPost = async (req, res) => {
     return res.redirect(req.get("Referer"))
   }
 
-  req.body.password = md5(req.body.password)
+  req.body.password = bcrypt.hashSync(req.body.password, 10)
   const user = new User(req.body)
   await user.save()
   const tokens = await createTokenPair(user, req)
@@ -46,18 +46,19 @@ module.exports.login = (req, res) => {
 // [POST]: /user/login
 module.exports.loginPost = async (req, res) => {
   const email = req.body.email
-  const password = md5(req.body.password)
+  const password = req.body.password
   const user = await User.findOne({ email: email, deleted: false })
   if (!user) {
     req.flash("error", "Email không tồn tại")
     return res.redirect(req.get("Referer"))
   }
-  if (user.password != password) {
-    req.flash("error", "Sai mật khẩu")
-    return res.redirect(req.get("Referer"))
-  }
   if (user.status == "inactive") {
     req.flash("error", "Tài khoản hiện đang bị khóa")
+    return res.redirect(req.get("Referer"))
+  }
+
+  if (!bcrypt.compareSync(password, user.password)) {
+    req.flash("error", "Sai mật khẩu")
     return res.redirect(req.get("Referer"))
   }
 
@@ -201,7 +202,7 @@ module.exports.resetPasswordPost = async (req, res) => {
   await User.updateOne({
     _id: authUser.id
   }, {
-    password: md5(password)
+    password: bcrypt.hashSync(password, 10)
   })
   await RefreshToken.updateMany({
     userId: authUser.id,
@@ -262,7 +263,7 @@ module.exports.editPatch = async (req, res) => {
     return res.redirect(req.get("Referer"))
   } else {
     if (req.body.password) {
-      req.body.password = md5(req.body.password)
+      req.body.password = bcrypt.hashSync(req.body.password, 10)
     } else {
       delete req.body.password
     }

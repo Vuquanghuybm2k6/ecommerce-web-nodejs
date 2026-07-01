@@ -1,4 +1,4 @@
-const md5 = require('md5')
+const bcrypt = require('bcrypt')
 const Account = require("../../models/account.model")
 // [GET] /admin/my-account
 module.exports.index = (req, res) => {
@@ -27,7 +27,7 @@ module.exports.editPatch = async (req, res) => {
     return res.redirect(req.get("Referer"))
   } else {
     if (req.body.password) {
-      req.body.password = md5(req.body.password)
+      req.body.password = bcrypt.hashSync(req.body.password, 10)
     } else {
       delete req.body.password
     }
