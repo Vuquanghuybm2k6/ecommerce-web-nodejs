@@ -8,5 +8,6 @@ router.post(
   validate.loginPost,
   controller.loginPost
 )
+router.post("/refresh-token", controller.refreshToken)
 router.get("/logout", controller.logout)
 module.exports = router
