@@ -37,7 +37,7 @@ module.exports.addPost = async (req,res) =>{
       'products.product_id': productId
     },{
       $set:{
-        'products.$.quantity': newQuantity
+        'products.$.quantity': newQuantity // $ là để tìm đúng phần tử cần tìm
       }
     })
   }
