@@ -4,6 +4,7 @@ const systemConfig = require("../../config/system")
 const bcrypt = require("bcrypt")
 const jwtHelper = require("../../helpers/jwt.helper")
 const adminAuthHelper = require("../../helpers/admin-auth.helper")
+
 // [GET]: /admin/auth/login
 module.exports.login = async (req, res) => {
   const authHeader = req.headers.authorization
@@ -32,6 +33,7 @@ module.exports.login = async (req, res) => {
     message: "Vui lòng đăng nhập"
   })
 }
+
 // [POST]: /admin/auth/login
 module.exports.loginPost = async (req, res) => {
   const email = req.body.email
@@ -74,6 +76,7 @@ module.exports.loginPost = async (req, res) => {
     data: tokens
   })
 }
+
 // [POST]: /admin/auth/refresh-token
 module.exports.refreshToken = async (req, res) => {
   const refreshToken = req.body.refreshToken
@@ -104,6 +107,7 @@ module.exports.refreshToken = async (req, res) => {
     return res.status(401).json({ code: 401, message: "Phiên đã hết hạn. Vui lòng đăng nhập lại" })
   }
 }
+
 // [POST]: /admin/auth/logout
 module.exports.logout = async (req, res) => {
   const refreshToken = req.body.refreshToken

@@ -6,6 +6,7 @@ const path = require("path")
 const systemConfig = require("./config/system")
 const cors = require('cors')
 
+
 app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],

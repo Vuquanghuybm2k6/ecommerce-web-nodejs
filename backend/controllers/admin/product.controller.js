@@ -6,6 +6,7 @@ const systemConfig = require("../../config/system")
 const ProductCategory = require("../../models/product-category.model")
 const createTreeHelper = require("../../helpers/createTree")
 const Account = require("../../models/account.model")
+
 // [GET]: /admin/products
 module.exports.index = async (req,res) =>{
   const filterStatus = filterStatusHelper(req.query)
@@ -72,6 +73,7 @@ module.exports.index = async (req,res) =>{
     }
   })
 }
+
 // [PATCH]: /admin/products/change-status/:status/:id
 module.exports.changeStatus = async (req,res) =>{
   const id = req.params.id
@@ -93,6 +95,7 @@ module.exports.changeStatus = async (req,res) =>{
     message: "Cập nhật trạng thái thành công"
   })
 }
+
 // [PATCH]: /admin/products/change-multi
 module.exports.changeMulti = async (req,res) =>{
   const type = req.body.type
@@ -137,6 +140,7 @@ module.exports.changeMulti = async (req,res) =>{
     message: "Thao tác thành công"
   })
 }
+
 //[PATCH]: /admin/products/delete/:id
 module.exports.delete = async (req,res)=>{
   const id = req.params.id
@@ -159,6 +163,7 @@ module.exports.delete = async (req,res)=>{
     message: "Thao tác thành công"
   })
 }
+
 // [GET]: /admin/products/create
 module.exports.create = async (req,res)=>{
   let find = {deleted: false}
@@ -172,6 +177,7 @@ module.exports.create = async (req,res)=>{
     }
   })
 }
+
 // [POST]: /admin/products/create
 module.exports.createPost = async (req,res)=>{
   req.body.price = parseInt(req.body.price)
@@ -194,6 +200,7 @@ module.exports.createPost = async (req,res)=>{
     message: "Tạo mới sản phẩm thành công"
   })
 }
+
 // [GET]: /admin/products/edit
 module.exports.edit = async (req,res)=>{
   const id = req.params.id
@@ -209,6 +216,7 @@ module.exports.edit = async (req,res)=>{
     }
   })
 }
+
 // [PATCH]: /admin/products/edit
 module.exports.editPatch = async (req,res) =>{
   const id =req.params.id
@@ -246,6 +254,7 @@ module.exports.editPatch = async (req,res) =>{
     })
   }
 }
+
 // [GET]: /admin/products/detail
 module.exports.detail = async (req,res)=>{
   try{
@@ -266,6 +275,7 @@ module.exports.detail = async (req,res)=>{
     })
   }
 }
+
 // [GET]: /admin/products/update-position
 module.exports.update = async (req,res)=>{
   const position = parseInt(req.params.position)

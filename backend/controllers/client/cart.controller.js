@@ -3,7 +3,7 @@ const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
 // [GET]: /cart
 module.exports.index = async (req,res)=>{
-  const cartId = req.body.cartId || req.headers['x-cart-id']
+  const cartId = req.body?.cartId || req.headers['x-cart-id']
   const cart = await Cart.findOne({_id: cartId})
   if(cart.products && cart.products.length > 0){
     for(const item of cart.products){
@@ -22,22 +22,20 @@ module.exports.index = async (req,res)=>{
 }
 // [POST]: /cart/add/:productId
 module.exports.addPost = async (req,res) =>{
-  const cartId = req.body.cartId || req.headers['x-cart-id']
+  const cartId = req.body?.cartId || req.headers['x-cart-id']
   const productId = req.params.productId
   const quantity = parseInt(req.body.quantity)
   const cart = await Cart.findOne({_id: cartId})
-  if(!cart){
-    return res.status(400).json({ code: 400, message: "Giỏ hàng không tồn tại" })
-  }
   const exitProductInCart = cart.products.find(item => item.product_id == productId)
+  const currentQuantity = exitProductInCart ? exitProductInCart.quantity : 0
+  const totalQuantity = currentQuantity + quantity
   if(exitProductInCart){
-    const newQuantity = exitProductInCart.quantity + quantity
     await Cart.updateOne({
       _id: cartId,
       'products.product_id': productId
     },{
       $set:{
-        'products.$.quantity': newQuantity
+        'products.$.quantity': totalQuantity
       }
     })
   }
@@ -64,7 +62,7 @@ module.exports.addPost = async (req,res) =>{
 // [GET]: /delete/:productId
 module.exports.delete = async (req,res)=>{
   const productId = req.params.productId
-  const cartId = req.body.cartId || req.headers['x-cart-id']
+  const cartId = req.body?.cartId || req.headers['x-cart-id']
   await Cart.updateOne({
     _id:cartId
   },{
@@ -84,8 +82,8 @@ module.exports.delete = async (req,res)=>{
 // [GET]: /update/:productId/:quantity
 module.exports.update = async (req,res)=>{
   const productId = req.params.productId
-  const cartId = req.body.cartId || req.headers['x-cart-id']
-  const quantity = req.params.quantity
+  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const quantity = parseInt(req.params.quantity)
   await Cart.updateOne({
     _id:cartId,
     'products.product_id': productId

@@ -2,7 +2,7 @@ const Cart = require("../../models/cart.model")
 
 module.exports.cartId = async (req, res, next) => {
   let cart = null
-  const cartId = req.headers['x-cart-id'] || req.body.cartId
+  const cartId = req.headers['x-cart-id'] || req.body?.cartId
 
   if (cartId) {
     cart = await Cart.findById(cartId)

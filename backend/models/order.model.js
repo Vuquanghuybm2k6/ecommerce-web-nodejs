@@ -11,9 +11,31 @@ const orderSchema = new mongoose.Schema({
       product_id: String,
       price: Number,
       discountPercentage: Number,
+      priceNew: Number,
       quantity: Number
     }
-  ]
+  ],
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending'
+  },
+  totalPrice: {
+    type: Number,
+    default: 0
+  },
+  orderCode:{
+    type: String,
+    unique: true
+  },
+  user_id: String,
+  paymentMethod: String,
+  shippingMethod: String,
+  
+  deleted: {
+    type: Boolean,
+    default: false
+  }
 },{
   timestamps: true
 });

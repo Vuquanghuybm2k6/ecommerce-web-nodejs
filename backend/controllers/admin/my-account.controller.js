@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt')
 const Account = require("../../models/account.model")
+
 // [GET] /admin/my-account
 module.exports.index = (req, res) => {
   res.json({
@@ -10,6 +11,7 @@ module.exports.index = (req, res) => {
     }
   });
 }
+
 // [GET] /admin/my-account/edit
 module.exports.edit = (req, res) => {
   res.json({
@@ -17,6 +19,7 @@ module.exports.edit = (req, res) => {
     message: "Thành công"
   });
 }
+
 // [PATCH] /admin/my-account/edit
 module.exports.editPatch = async (req, res) => {
   const id = req.user.id

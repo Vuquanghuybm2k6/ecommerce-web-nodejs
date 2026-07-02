@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt")
 const systemConfig = require("../../config/system")
 const paginationHelper = require("../../helpers/pagination")
 const searchHelper = require("../../helpers/search")
+
 // [GET]: /admin/accounts
 module.exports.index = async (req, res) => {
   const find = {
@@ -46,6 +47,7 @@ module.exports.index = async (req, res) => {
     }
   })
 }
+
 // [GET]: /admin/accounts/create
 module.exports.create = async (req, res) => {
   const roles = await Role.find({
@@ -59,6 +61,7 @@ module.exports.create = async (req, res) => {
     }
   })
 }
+
 // [POST]: /admin/accounts/create
 module.exports.createPost = async (req, res) => {
   const emailExit = await Account.findOne({
@@ -80,6 +83,7 @@ module.exports.createPost = async (req, res) => {
     })
   }
 }
+
 // [GET]: /admin/accounts/edit
 module.exports.edit = async (req, res) => {
   try {
@@ -106,6 +110,7 @@ module.exports.edit = async (req, res) => {
     })
   }
 }
+
 // [PATCH]: /admin/accounts/edit
 module.exports.editPatch = async (req, res) => {
   const id = req.params.id
@@ -136,6 +141,7 @@ module.exports.editPatch = async (req, res) => {
     })
   }
 }
+
 // [GET]: /admin/accounts/detail/:id
 module.exports.detail = async (req, res) => {
   try {
@@ -166,6 +172,7 @@ module.exports.detail = async (req, res) => {
     })
   }
 }
+
 // [PATCH]: /admin/accounts/delete/:id
 module.exports.delete = async (req, res) => {
   try {
@@ -187,6 +194,7 @@ module.exports.delete = async (req, res) => {
     })
   }
 }
+
 // [PATCH]: /admin/accounts/change-status/:status/:id
 module.exports.changeStatus = async (req, res) => {
   try {
