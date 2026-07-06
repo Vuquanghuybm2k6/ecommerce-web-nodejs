@@ -1,0 +1,69 @@
+const Order = require("../../models/order.model")
+const Product = require("../../models/product.model")
+const productHelper = require("../../helpers/product")
+
+const enrichOrder = async (order) => {
+  if (!order) return null
+
+  const productInfos = await Promise.all(
+    order.products.map(product => Product.findOne({ _id: product.product_id }).select("title thumbnail").lean())
+  )
+
+  order.products.forEach((product, index) => {
+    product.productInfo = productInfos[index]
+    product.priceNew = productHelper.priceNewProduct(product)
+    product.totalPrice = product.priceNew * product.quantity
+  })
+
+  order.totalPrice = order.products.reduce((sum, item) => sum + item.totalPrice, 0)
+  return order
+}
+
+module.exports.enrichOrder = enrichOrder
+
+// [GET]: /api/orders
+module.exports.index = async (req, res) => {
+  const userId = req.user.id
+
+  const orders = await Order.find({
+    user_id: userId,
+    deleted: false
+  })
+    .sort({ createdAt: -1 })
+    .lean()
+
+  const enrichedOrders = await Promise.all(orders.map(order => enrichOrder(order)))
+
+  res.json({
+    code: 200,
+    message: "Thành công",
+    data: { orders: enrichedOrders }
+  })
+}
+
+// [GET]: /api/orders/:orderId
+module.exports.detail = async (req, res) => {
+  const userId = req.user.id
+  const orderId = req.params.orderId
+
+  const order = await Order.findOne({
+    _id: orderId,
+    user_id: userId,
+    deleted: false
+  }).lean()
+
+  if (!order) {
+    return res.status(404).json({
+      code: 404,
+      message: "Không tìm thấy đơn hàng"
+    })
+  }
+
+  const enrichedOrder = await enrichOrder(order)
+
+  res.json({
+    code: 200,
+    message: "Thành công",
+    data: { order: enrichedOrder }
+  })
+}
