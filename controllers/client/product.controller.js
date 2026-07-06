@@ -94,6 +94,7 @@ module.exports.detail = async (req, res) => {
       deleted: false,
       status: "active"
     })
+    product.priceNew = productHelper.priceNewProduct(product)
     if(product.product_category_id){
       const category = await ProductCategory.findOne({
         _id: product.product_category_id,
@@ -101,13 +102,12 @@ module.exports.detail = async (req, res) => {
         status: "active"
       })
       product.category = category
-      product.priceNew = productHelper.priceNewProduct(product)
-      res.json({
-        code: 200,
-        message: "Thành công",
-        data: { product: product }
-      })
     }
+    res.json({
+      code: 200,
+      message: "Thành công",
+      data: { product: product }
+    })
   }
   catch(error){
     console.error(error)

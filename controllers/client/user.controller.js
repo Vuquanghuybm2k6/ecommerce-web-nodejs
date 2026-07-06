@@ -72,29 +72,42 @@ module.exports.loginPost = async (req, res) => {
 
   const tokens = await createTokenPair(user, req)
 
-  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
-  let cart = null
+  const guestCartId = req.cartId
+  const [guestCart, userCart] = await Promise.all([
+    guestCartId ? Cart.findById(guestCartId) : null,
+    Cart.findOne({ user_id: user.id })
+  ])
 
-  if (cartId) {
-    cart = await Cart.findById(cartId)
+  let finalCart = userCart
+
+  if (guestCart && userCart) {
+    if (guestCart._id.toString() !== userCart._id.toString()) {
+      for (const item of guestCart.products) {
+        const existing = userCart.products.find(p => p.product_id === item.product_id)
+        if (existing) {
+          existing.quantity += item.quantity
+        } else {
+          userCart.products.push(item)
+        }
+      }
+      await userCart.save()
+      await Cart.deleteOne({ _id: guestCart._id })
+    }
+  } else if (guestCart && !userCart) {
+    guestCart.user_id = user.id
+    finalCart = guestCart
+    await guestCart.save()
+  } else if (!guestCart && !userCart) {
+    finalCart = new Cart({ products: [], user_id: user.id })
+    await finalCart.save()
   }
-
-  if (!cart) {
-    cart = await Cart.findOne({ user_id: user.id })
-  }
-
-  if (!cart) {
-    cart = new Cart({ products: [], user_id: user.id })
-  }
-
-  await Cart.updateOne({ _id: cart._id }, { user_id: user.id })
 
   res.json({
     code: 200,
     message: "Đăng nhập thành công",
     data: {
       user: { id: user.id, email: user.email },
-      cartId: cart._id,
+      cartId: finalCart._id,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken
     }

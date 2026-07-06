@@ -31,6 +31,11 @@ mongoose.plugin(slug)
 const passport = require("./helpers/oauth.helper")
 app.use(passport.initialize())
 
+// Swagger
+const swaggerUi = require('swagger-ui-express')
+const swaggerSpec = require('./config/swagger')
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }))
+
 const route = require("./routes/client/index.route")
 const routeAdmin = require("./routes/admin/index.route")
 route(app)

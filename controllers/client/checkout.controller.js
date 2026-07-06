@@ -4,30 +4,23 @@ const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
 const sendMailHelper = require("../../helpers/sendMail")
 const mongoose = require("mongoose")
+const { enrichCartData } = require("./cart.controller")
 
 // [GET]: /checkout
 module.exports.index = async (req,res)=>{
-  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId
   const cart = await Cart.findOne({_id: cartId})
-  if(cart.products.length > 0){
-    for(const item of cart.products){
-      const productInfo = await Product.findOne({_id:item.product_id})
-      productInfo.priceNew = productHelper.priceNewProduct(productInfo)
-      item.productInfo = productInfo
-      item.totalPrice = item.quantity * productInfo.priceNew
-    }
-  }
-  cart.totalPrice = cart.products.reduce((sum,item)=>sum + item.totalPrice, 0)
+  const enrichedCart = await enrichCartData(cart)
   res.json({
     code: 200,
     message: "Thành công",
-    data: { cartDetail: cart }
+    data: { cartDetail: enrichedCart }
   })
 }
 
 // [POST]: /checkout/order
 module.exports.order = async (req,res)=>{
-  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId
   const cart = await Cart.findOne({_id:cartId})
 
   const userInfo = {
@@ -36,21 +29,24 @@ module.exports.order = async (req,res)=>{
     address: req.body.address
   }
 
+  const productInfos = await Promise.all(
+    cart.products.map(product => Product.findOne({_id: product.product_id}))
+  )
+
   let products = []
   let totalPrice = 0
-  for(const product of cart.products){
-    const productInfo = await Product.findOne({_id:product.product_id})
+  cart.products.forEach((product, index) => {
+    const productInfo = productInfos[index]
     const priceNew = productHelper.priceNewProduct(productInfo)
-    let objectProduct = {
-      product_id : product.product_id,
+    products.push({
+      product_id: product.product_id,
       quantity: product.quantity,
-      discountPercentage : productInfo.discountPercentage,
+      discountPercentage: productInfo.discountPercentage,
       price: productInfo.price,
       priceNew: priceNew
-    }
-    products.push(objectProduct)
+    })
     totalPrice += priceNew * product.quantity
-  }
+  })
 
   const orderCode = "DH" + Date.now().toString().slice(-8) // tạo mã đơn hàng
 
@@ -94,7 +90,7 @@ module.exports.order = async (req,res)=>{
         `Xác nhận đơn hàng ${orderCode}`,
         `<p>Cảm ơn bạn đã đặt hàng.</p>
          <p>Mã đơn: <b>${orderCode}</b></p>
-         <p>Tổng tiền: <b>${totalPrice.toLocaleString()}đ</b></p>
+         <p>Tổng tiền: <b>${totalPrice.toLocaleString('vi-VN')}₫</b></p>
          <p>Chúng tôi sẽ giao hàng trong thời gian sớm nhất.</p>`
       )
     }
@@ -113,12 +109,14 @@ module.exports.order = async (req,res)=>{
 module.exports.success = async (req,res)=>{
   const orderId =req.params.orderId
   const order = await Order.findOne({_id: orderId})
-  for(const product of order.products){
-    const productInfo = await Product.findOne({_id:product.product_id}).select("title thumbnail")
-    product.productInfo = productInfo
+  const productInfos = await Promise.all(
+    order.products.map(product => Product.findOne({_id: product.product_id}).select("title thumbnail"))
+  )
+  order.products.forEach((product, index) => {
+    product.productInfo = productInfos[index]
     product.priceNew = productHelper.priceNewProduct(product)
     product.totalPrice = product.priceNew * product.quantity
-  }
+  })
   order.totalPrice = order.products.reduce((sum,item)=>sum+item.totalPrice,0)
   res.json({
     code: 200,

@@ -1,4 +1,3 @@
-const Cart = require("../../models/cart.model")
 const Product = require("../../models/product.model")
 
 module.exports.index = async (req, res, next) => {
@@ -8,9 +7,7 @@ module.exports.index = async (req, res, next) => {
       message: 'Vui lòng đăng nhập hoặc đăng ký để đặt hàng'
     })
   }
-  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
-  const cart = await Cart.findOne({_id: cartId})
-  if(!cart || !cart.products || cart.products.length === 0){
+  if(!req.miniCart.products || req.miniCart.products.length === 0){
     return res.status(400).json({ code: 400, message: "Giỏ hàng trống" })
   }
   next()
@@ -33,17 +30,18 @@ module.exports.order = async (req, res, next) => {
   if(!req.body.address){
     return res.status(400).json({ code: 400, message: "Vui lòng nhập địa chỉ" })
   }
-  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
-  const cart = await Cart.findOne({_id: cartId})
-  if(!cart || !cart.products || cart.products.length === 0){
+  if(!req.miniCart.products || req.miniCart.products.length === 0){
     return res.status(400).json({ code: 400, message: "Giỏ hàng trống" })
   }
-  for(const product of cart.products){
-    const productInfo = await Product.findOne({_id: product.product_id})
+  const productInfos = await Promise.all(
+    req.miniCart.products.map(p => Product.findOne({_id: p.product_id}))
+  )
+  for(let i = 0; i < req.miniCart.products.length; i++){
+    const productInfo = productInfos[i]
     if(!productInfo){
       return res.status(404).json({ code: 404, message: `Sản phẩm không tồn tại` })
     }
-    if(!productInfo.stock || productInfo.stock < product.quantity){
+    if(!productInfo.stock || productInfo.stock < req.miniCart.products[i].quantity){
       return res.status(400).json({
         code: 400,
         message: `Sản phẩm "${productInfo.title}" chỉ còn ${productInfo.stock || 0} sản phẩm trong kho`
