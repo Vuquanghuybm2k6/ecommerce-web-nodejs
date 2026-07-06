@@ -1,7 +1,10 @@
 const Order = require("../../models/order.model")
+const Product = require("../../models/product.model")
 const paginationHelper = require("../../helpers/pagination")
 const searchHelper = require("../../helpers/search")
 const { enrichOrder } = require("../client/order.controller")
+const { isValidTransition } = require("../../helpers/orderStatus")
+const mongoose = require("mongoose")
 
 const orderStatuses = [
   { name: "Tất cả", class: "", status: "" },
@@ -75,15 +78,55 @@ module.exports.detail = async (req, res) => {
   }
 }
 
-// [PATCH]: /admin/orders/change-status/:status/:id
+// [PATCH]: /admin/orders/change-status/:id
 module.exports.changeStatus = async (req, res) => {
   const id = req.params.id
-  const status = req.params.status
+  const newStatus = req.body.status
   const validStatuses = ["pending", "confirmed", "shipped", "delivered", "cancelled"]
-  if (!validStatuses.includes(status)) {
+  if (!validStatuses.includes(newStatus)) {
     return res.status(400).json({ code: 400, message: "Trạng thái không hợp lệ" })
   }
-  await Order.updateOne({ _id: id }, { $set: { status } })
+
+  const order = await Order.findOne({ _id: id, deleted: false })
+  if (!order) {
+    return res.status(404).json({ code: 404, message: "Không tìm thấy đơn hàng" })
+  }
+
+  if (!isValidTransition(order.status, newStatus)) {
+    return res.status(400).json({
+      code: 400,
+      message: `Không thể chuyển từ "${order.status}" sang "${newStatus}"`
+    })
+  }
+
+  if (newStatus === "cancelled") {
+    const session = await mongoose.startSession()
+    session.startTransaction()
+    try {
+      for (const product of order.products) {
+        await Product.updateOne(
+          { _id: product.product_id },
+          { $inc: { stock: product.quantity } },
+          { session }
+        )
+      }
+      await Order.updateOne(
+        { _id: id },
+        { $set: { status: newStatus } },
+        { session }
+      )
+      await session.commitTransaction()
+    } catch (error) {
+      await session.abortTransaction()
+      console.error(error)
+      return res.status(500).json({ code: 500, message: "Cập nhật trạng thái thất bại" })
+    } finally {
+      session.endSession()
+    }
+  } else {
+    await Order.updateOne({ _id: id }, { $set: { status: newStatus } })
+  }
+
   res.json({
     code: 200,
     message: "Cập nhật trạng thái thành công"
