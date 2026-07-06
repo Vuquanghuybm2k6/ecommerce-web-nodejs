@@ -7,7 +7,7 @@ const mongoose = require("mongoose")
 
 // [GET]: /checkout
 module.exports.index = async (req,res)=>{
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   const cart = await Cart.findOne({_id: cartId})
   if(cart.products.length > 0){
     for(const item of cart.products){
@@ -27,7 +27,7 @@ module.exports.index = async (req,res)=>{
 
 // [POST]: /checkout/order
 module.exports.order = async (req,res)=>{
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   const cart = await Cart.findOne({_id:cartId})
 
   const userInfo = {

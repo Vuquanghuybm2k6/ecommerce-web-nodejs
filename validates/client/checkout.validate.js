@@ -2,7 +2,13 @@ const Cart = require("../../models/cart.model")
 const Product = require("../../models/product.model")
 
 module.exports.index = async (req, res, next) => {
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  if (!req.user) {
+    return res.status(401).json({
+      code: 401,
+      message: 'Vui lòng đăng nhập hoặc đăng ký để đặt hàng'
+    })
+  }
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   const cart = await Cart.findOne({_id: cartId})
   if(!cart || !cart.products || cart.products.length === 0){
     return res.status(400).json({ code: 400, message: "Giỏ hàng trống" })
@@ -11,6 +17,9 @@ module.exports.index = async (req, res, next) => {
 }
 
 module.exports.order = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ code: 401, message: "Vui lòng đăng nhập hoặc đăng ký để đặt hàng" })
+  }
   if(!req.body.fullName){
     return res.status(400).json({ code: 400, message: "Vui lòng nhập họ tên" })
   }
@@ -24,7 +33,7 @@ module.exports.order = async (req, res, next) => {
   if(!req.body.address){
     return res.status(400).json({ code: 400, message: "Vui lòng nhập địa chỉ" })
   }
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   const cart = await Cart.findOne({_id: cartId})
   if(!cart || !cart.products || cart.products.length === 0){
     return res.status(400).json({ code: 400, message: "Giỏ hàng trống" })

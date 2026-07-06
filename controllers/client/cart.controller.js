@@ -3,7 +3,7 @@ const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
 // [GET]: /cart
 module.exports.index = async (req,res)=>{
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   const cart = await Cart.findOne({_id: cartId})
   if(cart.products && cart.products.length > 0){
     for(const item of cart.products){
@@ -22,7 +22,7 @@ module.exports.index = async (req,res)=>{
 }
 // [POST]: /cart/add/:productId
 module.exports.addPost = async (req,res) =>{
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   const productId = req.params.productId
   const quantity = parseInt(req.body.quantity)
   const cart = await Cart.findOne({_id: cartId})
@@ -62,7 +62,7 @@ module.exports.addPost = async (req,res) =>{
 // [GET]: /delete/:productId
 module.exports.delete = async (req,res)=>{
   const productId = req.params.productId
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   await Cart.updateOne({
     _id:cartId
   },{
@@ -82,7 +82,7 @@ module.exports.delete = async (req,res)=>{
 // [GET]: /update/:productId/:quantity
 module.exports.update = async (req,res)=>{
   const productId = req.params.productId
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   const quantity = parseInt(req.params.quantity)
   await Cart.updateOne({
     _id:cartId,

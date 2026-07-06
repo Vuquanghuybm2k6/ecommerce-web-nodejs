@@ -10,7 +10,7 @@ module.exports.addPost = async (req, res, next) => {
   if(!product){
     return res.status(404).json({ code: 404, message: "Sản phẩm không tồn tại" })
   }
-  const cartId = req.body?.cartId || req.headers['x-cart-id']
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
   const cart = await Cart.findOne({_id: cartId})
   if(!cart){
     return res.status(400).json({ code: 400, message: "Giỏ hàng không tồn tại" })

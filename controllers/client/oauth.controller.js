@@ -1,17 +1,18 @@
 const passport = require("../../helpers/oauth.helper")
 const clientAuthHelper = require("../../helpers/auth.helper")
 
-module.exports.googleAuth = passport.authenticate("google", { // gọi đến gg, và muốn xin những thông tin trong scope
+module.exports.googleAuth = passport.authenticate("google", {
   scope: ["profile", "email"]
 })
 
 module.exports.googleCallback = (req, res, next) => {
   passport.authenticate("google", { session: false }, async (err, user) => {
     if (err || !user) {
-      return res.status(401).json({ code: 401, message: "Đăng nhập Google thất bại" })
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/user/login?error=auth_failed`)
     }
 
     const tokens = await clientAuthHelper.createTokenPair(user, req)
-    res.json({ code: 200, message: "Đăng nhập thành công", data: tokens })
+    const url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/user/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`
+    res.redirect(url)
   })(req, res, next)
 }

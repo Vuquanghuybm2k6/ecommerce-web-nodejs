@@ -26,11 +26,19 @@ module.exports.registerPost = async (req, res) => {
   const user = new User(req.body)
   await user.save()
   const tokens = await createTokenPair(user, req)
+
+  const cart = new Cart({
+    products: [],
+    user_id: user.id
+  })
+  await cart.save()
+
   res.json({
     code: 200,
     message: "Đăng kí tài khoản thành công",
     data: {
       user: { id: user.id, email: user.email },
+      cartId: cart.id,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken
     }
@@ -64,11 +72,29 @@ module.exports.loginPost = async (req, res) => {
 
   const tokens = await createTokenPair(user, req)
 
+  const cartId = req.cartId || req.body?.cartId || req.headers['x-cart-id']
+  let cart = null
+
+  if (cartId) {
+    cart = await Cart.findById(cartId)
+  }
+
+  if (!cart) {
+    cart = await Cart.findOne({ user_id: user.id })
+  }
+
+  if (!cart) {
+    cart = new Cart({ products: [], user_id: user.id })
+  }
+
+  await Cart.updateOne({ _id: cart._id }, { user_id: user.id })
+
   res.json({
     code: 200,
     message: "Đăng nhập thành công",
     data: {
       user: { id: user.id, email: user.email },
+      cartId: cart._id,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken
     }

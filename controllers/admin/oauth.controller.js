@@ -9,17 +9,11 @@ module.exports.googleAuth = passport.authenticate("admin-google", {
 module.exports.googleCallback = (req, res, next) => {
   passport.authenticate("admin-google", { session: false }, async (err, account, info) => {
     if (err || !account) {
-      return res.status(401).json({
-        code: 401,
-        message: info?.message || "Đăng nhập Google thất bại"
-      })
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/login?error=auth_failed`)
     }
 
     const tokens = await adminAuthHelper.createTokenPair(account, req)
-    res.json({
-      code: 200,
-      message: "Đăng nhập thành công",
-      data: tokens
-    })
+    const url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`
+    res.redirect(url)
   })(req, res, next)
 }
