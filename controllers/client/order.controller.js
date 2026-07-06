@@ -94,38 +94,13 @@ module.exports.cancel = async (req, res) => {
     })
   }
 
-  const session = await mongoose.startSession()
-  session.startTransaction()
+  await Order.updateOne(
+    { _id: orderId },
+    { $set: { status: "cancelled" } }
+  )
 
-  try {
-    for (const product of order.products) {
-      await Product.updateOne(
-        { _id: product.product_id },
-        { $inc: { stock: product.quantity } },
-        { session }
-      )
-    }
-
-    await Order.updateOne(
-      { _id: orderId },
-      { $set: { status: "cancelled" } },
-      { session }
-    )
-
-    await session.commitTransaction()
-
-    res.json({
-      code: 200,
-      message: "Hủy đơn hàng thành công"
-    })
-  } catch (error) {
-    await session.abortTransaction()
-    console.error(error)
-    res.status(500).json({
-      code: 500,
-      message: "Hủy đơn hàng thất bại"
-    })
-  } finally {
-    session.endSession()
-  }
+  res.json({
+    code: 200,
+    message: "Hủy đơn hàng thành công"
+  })
 }

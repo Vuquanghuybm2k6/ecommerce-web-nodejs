@@ -87,7 +87,7 @@ module.exports.changeStatus = async (req, res) => {
     return res.status(400).json({ code: 400, message: "Trạng thái không hợp lệ" })
   }
 
-  const order = await Order.findOne({ _id: id, deleted: false })
+  const order = await Order.findOne({ _id: id, deleted: false }).lean()
   if (!order) {
     return res.status(404).json({ code: 404, message: "Không tìm thấy đơn hàng" })
   }
@@ -99,14 +99,25 @@ module.exports.changeStatus = async (req, res) => {
     })
   }
 
-  if (newStatus === "cancelled") {
+  if (!order.products || order.products.length === 0) {
+    return res.status(400).json({ code: 400, message: "Đơn hàng không có sản phẩm" })
+  }
+
+  if (newStatus === "confirmed" && order.status === "pending") {
     const session = await mongoose.startSession()
     session.startTransaction()
     try {
       for (const product of order.products) {
+        const productDoc = await Product.findOne({ _id: product.product_id }).session(session)
+        if (!productDoc) {
+          throw new Error(`Không tìm thấy sản phẩm ${product.product_id}`)
+        }
+        if (productDoc.stock < product.quantity) {
+          throw new Error(`Sản phẩm "${productDoc.title}" không đủ hàng (còn ${productDoc.stock}, cần ${product.quantity})`)
+        }
         await Product.updateOne(
           { _id: product.product_id },
-          { $inc: { stock: product.quantity } },
+          { $inc: { stock: -product.quantity } },
           { session }
         )
       }
@@ -118,8 +129,41 @@ module.exports.changeStatus = async (req, res) => {
       await session.commitTransaction()
     } catch (error) {
       await session.abortTransaction()
-      console.error(error)
-      return res.status(500).json({ code: 500, message: "Cập nhật trạng thái thất bại" })
+      console.error("Confirm transaction failed:", error)
+      return res.status(500).json({
+        code: 500,
+        message: error.message || "Xác nhận đơn hàng thất bại"
+      })
+    } finally {
+      session.endSession()
+    }
+  } else if (newStatus === "cancelled" && order.status !== "pending") {
+    const session = await mongoose.startSession()
+    session.startTransaction()
+    try {
+      for (const product of order.products) {
+        const result = await Product.updateOne(
+          { _id: product.product_id },
+          { $inc: { stock: product.quantity } },
+          { session }
+        )
+        if (result.matchedCount === 0) {
+          throw new Error(`Không tìm thấy sản phẩm ${product.product_id}`)
+        }
+      }
+      await Order.updateOne(
+        { _id: id },
+        { $set: { status: newStatus } },
+        { session }
+      )
+      await session.commitTransaction()
+    } catch (error) {
+      await session.abortTransaction()
+      console.error("Cancel transaction failed:", error)
+      return res.status(500).json({
+        code: 500,
+        message: error.message || "Hủy đơn hàng thất bại"
+      })
     } finally {
       session.endSession()
     }

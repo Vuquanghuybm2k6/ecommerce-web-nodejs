@@ -68,14 +68,6 @@ module.exports.order = async (req,res)=>{
     const order = new Order(objectOrder)
     await order.save({ session })
 
-    for(const product of cart.products){
-      await Product.updateOne(
-        { _id: product.product_id },
-        { $inc: { stock: -product.quantity } }, // giảm số lượng sản phẩm trong kho
-        { session }
-      )
-    }
-
     await Cart.updateOne(
       { _id: cartId },
       { products : [] },
