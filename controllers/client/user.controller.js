@@ -27,11 +27,16 @@ module.exports.registerPost = async (req, res) => {
   await user.save()
   const tokens = await createTokenPair(user, req)
 
-  const cart = new Cart({
-    products: [],
-    user_id: user.id
-  })
-  await cart.save()
+  const guestCartId = req.cartId
+  let cart = guestCartId ? await Cart.findById(guestCartId) : null
+
+  if (cart) {
+    cart.user_id = user.id
+    await cart.save()
+  } else {
+    cart = new Cart({ products: [], user_id: user.id })
+    await cart.save()
+  }
 
   res.json({
     code: 200,
