@@ -1,12 +1,6 @@
 const Product = require("../../models/product.model")
 
 module.exports.index = async (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({
-      code: 401,
-      message: 'Vui lòng đăng nhập hoặc đăng ký để đặt hàng'
-    })
-  }
   if(!req.miniCart.products || req.miniCart.products.length === 0){
     return res.status(400).json({ code: 400, message: "Giỏ hàng trống" })
   }

@@ -9,7 +9,7 @@ const { enrichCartData } = require("./cart.controller")
 // [GET]: /checkout
 module.exports.index = async (req,res)=>{
   const cartId = req.cartId
-  const cart = await Cart.findOne({_id: cartId})
+  const cart = await Cart.findOne({_id: cartId}).lean()
   const enrichedCart = await enrichCartData(cart)
   res.json({
     code: 200,
@@ -21,7 +21,7 @@ module.exports.index = async (req,res)=>{
 // [POST]: /checkout/order
 module.exports.order = async (req,res)=>{
   const cartId = req.cartId
-  const cart = await Cart.findOne({_id:cartId})
+  const cart = await Cart.findOne({_id:cartId}).lean()
 
   const userInfo = {
     fullName: req.body.fullName,
@@ -108,7 +108,7 @@ module.exports.order = async (req,res)=>{
 // [GET]: /checkout/success/:orderId
 module.exports.success = async (req,res)=>{
   const orderId =req.params.orderId
-  const order = await Order.findOne({_id: orderId})
+  const order = await Order.findOne({_id: orderId}).lean()
   const productInfos = await Promise.all(
     order.products.map(product => Product.findOne({_id: product.product_id}).select("title thumbnail"))
   )
