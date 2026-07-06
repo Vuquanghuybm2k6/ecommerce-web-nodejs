@@ -1,0 +1,17 @@
+/api/admin/dashboard:
+  get:
+    tags:
+      - Admin - Dashboard
+    summary: Get dashboard statistics
+    description: Retrieve comprehensive dashboard statistics including counts for categories, products, accounts, users, orders, and revenue by day
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Dashboard statistics
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/DashboardResponse
+      '401':
+        description: Unauthorized

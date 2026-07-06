@@ -1,0 +1,194 @@
+/api/user/info:
+  get:
+    tags:
+      - Client - User
+    summary: Get current user info
+    description: Retrieve the authenticated user's profile information
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: User profile data
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/UserInfoResponse
+      '401':
+        description: Unauthorized
+
+/api/user/edit:
+  get:
+    tags:
+      - Client - User
+    summary: Get edit profile page
+    description: Get user profile data for editing
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: User edit data
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/UserInfoResponse
+      '401':
+        description: Unauthorized
+  patch:
+    tags:
+      - Client - User
+    summary: Update user profile
+    description: Update authenticated user's profile information
+    security:
+      - BearerAuth: []
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              fullName:
+                type: string
+                description: New full name
+              email:
+                type: string
+                format: email
+                description: New email address
+              password:
+                type: string
+                format: password
+                description: New password
+              phone:
+                type: string
+                description: Phone number
+              avatar:
+                type: string
+                format: binary
+                description: New avatar image
+    responses:
+      '200':
+        description: Profile updated successfully
+      '400':
+        description: Email already exists or validation error
+      '401':
+        description: Unauthorized
+
+/api/user/password/forgot:
+  get:
+    tags:
+      - Client - User
+    summary: Forgot password page
+    description: Get forgot password page data
+    security: []
+    responses:
+      '200':
+        description: Forgot password page
+  post:
+    tags:
+      - Client - User
+    summary: Send OTP for password reset
+    description: Send a 6-digit OTP to the user's email for password reset
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+            properties:
+              email:
+                type: string
+                format: email
+                description: Registered email address
+    responses:
+      '200':
+        description: OTP sent to email
+      '400':
+        description: Email not found
+
+/api/user/password/otp:
+  get:
+    tags:
+      - Client - User
+    summary: OTP verification page
+    description: Get OTP verification page data
+    security: []
+    responses:
+      '200':
+        description: OTP verification page
+  post:
+    tags:
+      - Client - User
+    summary: Verify OTP
+    description: Verify the 6-digit OTP sent to email and receive tokens for password reset
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+              - otp
+            properties:
+              email:
+                type: string
+                format: email
+                description: Email address
+              otp:
+                type: string
+                description: 6-digit OTP code
+    responses:
+      '200':
+        description: OTP verified, tokens returned
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                message:
+                  type: string
+                data:
+                  $ref: #/components/schemas/AuthTokens
+      '400':
+        description: Invalid or expired OTP
+
+/api/user/password/reset:
+  get:
+    tags:
+      - Client - User
+    summary: Reset password page
+    description: Get reset password page data
+    security: []
+    responses:
+      '200':
+        description: Reset password page
+  post:
+    tags:
+      - Client - User
+    summary: Reset password
+    description: Reset user password using valid token from OTP verification. Revokes all refresh tokens.
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - password
+            properties:
+              password:
+                type: string
+                format: password
+                description: New password
+    responses:
+      '200':
+        description: Password reset successfully
+      '401':
+        description: Unauthorized or invalid token

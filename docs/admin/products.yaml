@@ -1,0 +1,332 @@
+/api/admin/products:
+  get:
+    tags:
+      - Admin - Products
+    summary: List admin products
+    description: Get paginated, filterable, sortable product list for admin management
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: keyword
+        in: query
+        schema:
+          type: string
+        description: Search keyword
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [active, inactive]
+        description: Filter by status
+      - name: sortKey
+        in: query
+        schema:
+          type: string
+          enum: [position, title, price, createdAt]
+        description: Sort field
+      - name: sortValue
+        in: query
+        schema:
+          type: string
+          enum: [asc, desc]
+        description: Sort direction
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+        description: Page number
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 10
+        description: Items per page
+    responses:
+      '200':
+        description: Admin product list with pagination
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/ProductListResponse
+      '401':
+        description: Unauthorized
+
+/api/admin/products/create:
+  get:
+    tags:
+      - Admin - Products
+    summary: Get product create page
+    description: Get categories tree for product creation form
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Create page data (categories tree)
+      '401':
+        description: Unauthorized
+  post:
+    tags:
+      - Admin - Products
+    summary: Create a new product
+    description: Create a new product with optional thumbnail upload
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - title
+              - price
+            properties:
+              title:
+                type: string
+                description: Product title
+              description:
+                type: string
+                description: Product description
+              price:
+                type: number
+                description: Product price
+              discountPercentage:
+                type: number
+                description: Discount percentage (0-100)
+              stock:
+                type: number
+                description: Available stock
+              status:
+                type: string
+                enum: [active, inactive]
+                description: Product status
+              product_category_id:
+                type: string
+                description: Category ID
+              position:
+                type: number
+                description: Display position
+              featured:
+                type: string
+                description: Set to "1" for featured product
+              thumbnail:
+                type: string
+                format: binary
+                description: Product thumbnail image
+    responses:
+      '200':
+        description: Product created successfully
+      '400':
+        description: Validation error
+      '401':
+        description: Unauthorized
+
+/api/admin/products/edit/{id}:
+  get:
+    tags:
+      - Admin - Products
+    summary: Get product for editing
+    description: Retrieve product data with categories tree for edit form
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+    responses:
+      '200':
+        description: Product data with categories tree
+      '401':
+        description: Unauthorized
+      '404':
+        description: Product not found
+  patch:
+    tags:
+      - Admin - Products
+    summary: Update a product
+    description: Update product details including optional thumbnail upload
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              price:
+                type: number
+              discountPercentage:
+                type: number
+              stock:
+                type: number
+              status:
+                type: string
+                enum: [active, inactive]
+              product_category_id:
+                type: string
+              position:
+                type: number
+              featured:
+                type: string
+              thumbnail:
+                type: string
+                format: binary
+    responses:
+      '200':
+        description: Product updated successfully
+      '401':
+        description: Unauthorized
+      '404':
+        description: Product not found
+
+/api/admin/products/detail/{id}:
+  get:
+    tags:
+      - Admin - Products
+    summary: Get product detail
+    description: Retrieve full product details by ID
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+    responses:
+      '200':
+        description: Product detail
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/ProductDetailResponse
+      '401':
+        description: Unauthorized
+      '404':
+        description: Product not found
+
+/api/admin/products/change-status/{status}/{id}:
+  patch:
+    tags:
+      - Admin - Products
+    summary: Change product status
+    description: Toggle product status between active and inactive
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: status
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [active, inactive]
+        description: New status
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+    responses:
+      '200':
+        description: Status changed successfully
+      '401':
+        description: Unauthorized
+
+/api/admin/products/change-multi:
+  patch:
+    tags:
+      - Admin - Products
+    summary: Bulk change products
+    description: Perform bulk actions on multiple products (change status, delete, or update position)
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - ids
+              - type
+            properties:
+              ids:
+                type: string
+                description: Comma-separated product IDs
+              type:
+                type: string
+                enum: [active, inactive, delete-all, change-position]
+                description: Bulk action type
+              value:
+                type: string
+                description: Value for change-position action
+    responses:
+      '200':
+        description: Bulk action completed
+      '401':
+        description: Unauthorized
+
+/api/admin/products/delete/{id}:
+  delete:
+    tags:
+      - Admin - Products
+    summary: Soft delete a product
+    description: Soft delete a product by setting the deleted flag
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+    responses:
+      '200':
+        description: Product deleted
+      '401':
+        description: Unauthorized
+
+/api/admin/products/update-position/{id}/{position}:
+  get:
+    tags:
+      - Admin - Products
+    summary: Update product position
+    description: Update display position of a product
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+      - name: position
+        in: path
+        required: true
+        schema:
+          type: number
+        description: New position value
+    responses:
+      '200':
+        description: Position updated
+      '401':
+        description: Unauthorized

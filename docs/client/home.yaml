@@ -1,0 +1,30 @@
+/api:
+  get:
+    tags:
+      - Client - Home
+    summary: Get home page data
+    description: Returns featured products (up to 6) and newest products (up to 6) for the home page
+    security: []
+    responses:
+      '200':
+        description: Home page data with featured and newest products
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                message:
+                  type: string
+                data:
+                  type: object
+                  properties:
+                    productsFeatured:
+                      type: array
+                      items:
+                        $ref: #/components/schemas/Product
+                    productsNew:
+                      type: array
+                      items:
+                        $ref: #/components/schemas/Product

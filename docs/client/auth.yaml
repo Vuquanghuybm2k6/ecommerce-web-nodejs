@@ -1,0 +1,169 @@
+/api/auth/google:
+  get:
+    tags:
+      - Client - Auth
+    summary: Google OAuth login redirect
+    description: Redirect user to Google OAuth consent screen for authentication
+    security: []
+    responses:
+      '302':
+        description: Redirect to Google OAuth
+
+/api/auth/google/callback:
+  get:
+    tags:
+      - Client - Auth
+    summary: Google OAuth callback
+    description: Handle Google OAuth callback, create or find user, redirect to frontend with tokens
+    security: []
+    responses:
+      '302':
+        description: Redirect to frontend with access and refresh tokens in URL query params
+
+/api/user/register:
+  get:
+    tags:
+      - Client - Auth
+    summary: Register page
+    description: Get register page data
+    security: []
+    responses:
+      '200':
+        description: Register page
+  post:
+    tags:
+      - Client - Auth
+    summary: Register new user
+    description: Create a new user account with email and password
+    security: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - fullName
+              - email
+              - password
+            properties:
+              fullName:
+                type: string
+                description: User full name
+              email:
+                type: string
+                format: email
+                description: User email address
+              password:
+                type: string
+                format: password
+                description: User password
+              avatar:
+                type: string
+                format: binary
+                description: User avatar image
+    responses:
+      '200':
+        description: Registration successful with tokens and cart
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/UserRegisterResponse
+      '400':
+        description: Email already exists or validation error
+
+/api/user/login:
+  get:
+    tags:
+      - Client - Auth
+    summary: Login page
+    description: Get login page data
+    security: []
+    responses:
+      '200':
+        description: Login page
+  post:
+    tags:
+      - Client - Auth
+    summary: Login with email and password
+    description: Authenticate user with email and password, returns tokens and cart
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+              - password
+            properties:
+              email:
+                type: string
+                description: User email
+              password:
+                type: string
+                description: User password
+    responses:
+      '200':
+        description: Login successful
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/UserRegisterResponse
+      '401':
+        description: Invalid email or password
+
+/api/user/refresh-token:
+  post:
+    tags:
+      - Client - Auth
+    summary: Refresh access token
+    description: Get a new access token and refresh token pair using a valid refresh token
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - refreshToken
+            properties:
+              refreshToken:
+                type: string
+                description: Refresh token
+    responses:
+      '200':
+        description: New tokens issued
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                data:
+                  $ref: #/components/schemas/AuthTokens
+      '401':
+        description: Invalid or expired refresh token
+
+/api/user/logout:
+  post:
+    tags:
+      - Client - Auth
+    summary: Logout
+    description: Revoke the current refresh token to logout
+    security: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              refreshToken:
+                type: string
+                description: Refresh token to revoke
+    responses:
+      '200':
+        description: Logged out successfully

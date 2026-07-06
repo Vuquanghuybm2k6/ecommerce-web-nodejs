@@ -1,0 +1,47 @@
+openapi: '3.0.0'
+info:
+  title: Product Management API
+  version: '1.0.0'
+  description: |
+    API for Product Management System with client and admin interfaces.
+    - **Client APIs**: Public endpoints for browsing products, managing cart, checkout, and user authentication.
+    - **Admin APIs**: Protected endpoints for managing products, categories, accounts, roles, and settings.
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Client - Home
+    description: Home page - featured and newest products
+  - name: Client - Products
+    description: Product listing, detail, and category filtering
+  - name: Client - Search
+    description: Product search by keyword
+  - name: Client - Cart
+    description: Shopping cart management for guest and logged-in users
+  - name: Client - Checkout
+    description: Checkout process and order placement
+  - name: Client - Auth
+    description: User registration, login, OAuth, token management
+  - name: Client - User
+    description: User profile, password management
+  - name: Admin - Auth
+    description: Admin authentication and token management
+  - name: Admin - Dashboard
+    description: Dashboard statistics and analytics
+  - name: Admin - Products
+    description: Admin product CRUD operations
+  - name: Admin - Categories
+    description: Product category management
+  - name: Admin - Roles
+    description: Role and permissions management
+  - name: Admin - Accounts
+    description: Admin account management
+  - name: Admin - My Account
+    description: Current admin profile management
+  - name: Admin - Settings
+    description: General site settings

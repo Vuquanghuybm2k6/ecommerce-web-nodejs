@@ -38,7 +38,7 @@ module.exports.enrichCartData = enrichCartData
 // [GET]: /cart
 module.exports.index = async (req,res)=>{
   const cartId = req.cartId
-  const cart = await Cart.findOne({_id: cartId})
+  const cart = await Cart.findOne({_id: cartId}).lean()
 
   if(!cart){
     return res.json({
@@ -60,7 +60,7 @@ module.exports.addPost = async (req,res) =>{
   const cartId = req.cartId
   const productId = req.params.productId
   const quantity = parseInt(req.body.quantity)
-  const cart = await Cart.findOne({_id: cartId})
+  const cart = await Cart.findOne({_id: cartId}).lean()
   const exitProductInCart = cart.products.find(item => item.product_id == productId)
   const currentQuantity = exitProductInCart ? exitProductInCart.quantity : 0
   const totalQuantity = currentQuantity + quantity
@@ -87,7 +87,7 @@ module.exports.addPost = async (req,res) =>{
       }
     })
   }
-  const updatedCart = await Cart.findOne({_id: cartId})
+  const updatedCart = await Cart.findOne({_id: cartId}).lean()
   const enrichedCart = await enrichCartData(updatedCart)
   res.json({
     code: 200,
@@ -108,7 +108,7 @@ module.exports.delete = async (req,res)=>{
       }
     }
   })
-  const updatedCart = await Cart.findOne({_id: cartId})
+  const updatedCart = await Cart.findOne({_id: cartId}).lean()
   const enrichedCart = await enrichCartData(updatedCart)
   res.json({
     code: 200,
@@ -127,7 +127,7 @@ module.exports.update = async (req,res)=>{
   },{
    'products.$.quantity': quantity
   })
-  const updatedCart = await Cart.findOne({_id: cartId})
+  const updatedCart = await Cart.findOne({_id: cartId}).lean()
   const enrichedCart = await enrichCartData(updatedCart)
   res.json({
     code: 200,

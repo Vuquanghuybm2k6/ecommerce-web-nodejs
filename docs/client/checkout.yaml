@@ -1,0 +1,96 @@
+/api/checkout:
+  get:
+    tags:
+      - Client - Checkout
+    summary: Get checkout data
+    description: Retrieve cart data ready for checkout. Requires authentication and non-empty cart.
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: x-cart-id
+        in: header
+        schema:
+          type: string
+        description: Cart ID
+    responses:
+      '200':
+        description: Checkout data
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/CartResponse
+      '401':
+        description: Unauthorized - missing or invalid token
+      '400':
+        description: Cart is empty
+
+/api/checkout/order:
+  post:
+    tags:
+      - Client - Checkout
+    summary: Place an order
+    description: Create a new order from the current cart. Requires authentication.
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - fullName
+              - phone
+              - address
+            properties:
+              fullName:
+                type: string
+                description: Recipient full name
+              phone:
+                type: string
+                description: Recipient phone number
+              address:
+                type: string
+                description: Shipping address
+              paymentMethod:
+                type: string
+                default: COD
+                description: Payment method
+              shippingMethod:
+                type: string
+                description: Shipping method
+    responses:
+      '200':
+        description: Order placed successfully
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/OrderSuccessResponse
+      '400':
+        description: Validation error or empty cart
+      '401':
+        description: Unauthorized
+
+/api/checkout/success/{orderId}:
+  get:
+    tags:
+      - Client - Checkout
+    summary: Get order success details
+    description: Retrieve full order details after successful checkout
+    security: []
+    parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Order ID
+    responses:
+      '200':
+        description: Order details with product info
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/OrderResponse
+      '404':
+        description: Order not found

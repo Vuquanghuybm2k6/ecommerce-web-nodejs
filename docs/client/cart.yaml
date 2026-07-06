@@ -1,0 +1,132 @@
+/api/cart:
+  get:
+    tags:
+      - Client - Cart
+    summary: Get current cart
+    description: Retrieve the current shopping cart with enriched product information (price, thumbnail, etc.)
+    security: []
+    parameters:
+      - name: x-cart-id
+        in: header
+        schema:
+          type: string
+        description: Cart ID from cookie or localStorage
+    responses:
+      '200':
+        description: Cart data with enriched product info
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/CartResponse
+
+/api/cart/add/{productId}:
+  post:
+    tags:
+      - Client - Cart
+    summary: Add product to cart
+    description: Add a product with specified quantity to the cart
+    security: []
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+      - name: x-cart-id
+        in: header
+        schema:
+          type: string
+        description: Existing cart ID (omit for new cart)
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - quantity
+            properties:
+              quantity:
+                type: integer
+                default: 1
+                minimum: 1
+    responses:
+      '200':
+        description: Product added to cart
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/CartResponse
+      '400':
+        description: Invalid quantity or insufficient stock
+
+/api/cart/delete/{productId}:
+  delete:
+    tags:
+      - Client - Cart
+    summary: Remove product from cart
+    description: Remove a specific product from the cart
+    security: []
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID to remove
+      - name: x-cart-id
+        in: header
+        schema:
+          type: string
+        description: Cart ID
+    responses:
+      '200':
+        description: Product removed from cart
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/CartResponse
+      '404':
+        description: Cart or product not found
+
+/api/cart/update/{productId}:
+  put:
+    tags:
+      - Client - Cart
+    summary: Update product quantity
+    description: Update the quantity of a specific product in the cart
+    security: []
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID to update
+      - name: x-cart-id
+        in: header
+        schema:
+          type: string
+        description: Cart ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - quantity
+            properties:
+              quantity:
+                type: integer
+                minimum: 1
+    responses:
+      '200':
+        description: Quantity updated
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/CartResponse
+      '400':
+        description: Validation error or insufficient stock

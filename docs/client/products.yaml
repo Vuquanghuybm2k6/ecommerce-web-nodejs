@@ -1,0 +1,80 @@
+/api/products:
+  get:
+    tags:
+      - Client - Products
+    summary: List active products
+    description: Get active products with pagination and optional keyword search
+    security: []
+    parameters:
+      - name: keyword
+        in: query
+        schema:
+          type: string
+        description: Search keyword for product title
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+        description: Page number for pagination
+    responses:
+      '200':
+        description: List of products with pagination
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/ProductListResponse
+
+/api/products/detail/{slug}:
+  get:
+    tags:
+      - Client - Products
+    summary: Get product detail by slug
+    description: Returns full product information including category data
+    security: []
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product slug
+    responses:
+      '200':
+        description: Product detail
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/ProductDetailResponse
+      '404':
+        description: Product not found
+
+/api/products/{slugCategory}:
+  get:
+    tags:
+      - Client - Products
+    summary: Get products by category slug
+    description: Returns products filtered by category, with optional pagination
+    security: []
+    parameters:
+      - name: slugCategory
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Category slug
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+        description: Page number for pagination
+    responses:
+      '200':
+        description: Products filtered by category
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/ProductListResponse
+      '400':
+        description: Category not found

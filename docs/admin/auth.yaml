@@ -1,0 +1,125 @@
+/api/admin:
+  get:
+    tags:
+      - Admin - Auth
+    summary: Admin root page
+    description: Returns login page data or current admin info if authenticated
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Admin root page data
+
+/api/admin/auth/login:
+  get:
+    tags:
+      - Admin - Auth
+    summary: Admin login page
+    description: Get admin login page data
+    security: []
+    responses:
+      '200':
+        description: Login page data
+  post:
+    tags:
+      - Admin - Auth
+    summary: Admin login
+    description: Authenticate admin account with email and password
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+              - password
+            properties:
+              email:
+                type: string
+                description: Admin email
+              password:
+                type: string
+                description: Admin password
+    responses:
+      '200':
+        description: Login successful
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                data:
+                  $ref: #/components/schemas/AuthTokens
+      '401':
+        description: Invalid email or password
+
+/api/admin/auth/refresh-token:
+  post:
+    tags:
+      - Admin - Auth
+    summary: Admin refresh token
+    description: Get a new access/refresh token pair for the admin using a valid refresh token
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - refreshToken
+            properties:
+              refreshToken:
+                type: string
+                description: Refresh token
+    responses:
+      '200':
+        description: Tokens refreshed
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                data:
+                  $ref: #/components/schemas/AuthTokens
+      '401':
+        description: Invalid or expired refresh token
+
+/api/admin/auth/logout:
+  post:
+    tags:
+      - Admin - Auth
+    summary: Admin logout
+    description: Revoke the current admin refresh token
+    security: []
+    responses:
+      '200':
+        description: Logged out successfully
+
+/api/admin/auth/google:
+  get:
+    tags:
+      - Admin - Auth
+    summary: Admin Google OAuth login
+    description: Redirect admin to Google OAuth consent screen
+    security: []
+    responses:
+      '302':
+        description: Redirect to Google OAuth
+
+/api/admin/auth/google/callback:
+  get:
+    tags:
+      - Admin - Auth
+    summary: Admin Google OAuth callback
+    description: Handle Google OAuth callback for admin, create or link account, redirect with tokens
+    security: []
+    responses:
+      '302':
+        description: Redirect to admin frontend with tokens

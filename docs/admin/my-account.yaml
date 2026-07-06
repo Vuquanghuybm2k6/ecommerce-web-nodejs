@@ -1,0 +1,77 @@
+/api/admin/my-account:
+  get:
+    tags:
+      - Admin - My Account
+    summary: Get current admin profile
+    description: Retrieve the authenticated admin's profile information
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Admin profile data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                data:
+                  type: object
+                  properties:
+                    account:
+                      $ref: #/components/schemas/Account
+      '401':
+        description: Unauthorized
+
+/api/admin/my-account/edit:
+  get:
+    tags:
+      - Admin - My Account
+    summary: Get edit profile page
+    description: Get admin profile data for editing
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Edit profile data
+      '401':
+        description: Unauthorized
+  patch:
+    tags:
+      - Admin - My Account
+    summary: Update admin profile
+    description: Update the authenticated admin's profile information
+    security:
+      - BearerAuth: []
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              fullName:
+                type: string
+                description: New full name
+              email:
+                type: string
+                format: email
+                description: New email address
+              password:
+                type: string
+                format: password
+                description: New password
+              phone:
+                type: string
+                description: Phone number
+              avatar:
+                type: string
+                format: binary
+                description: New avatar image
+    responses:
+      '200':
+        description: Profile updated
+      '400':
+        description: Validation error or email exists
+      '401':
+        description: Unauthorized

@@ -1,0 +1,206 @@
+/api/admin/products-category:
+  get:
+    tags:
+      - Admin - Categories
+    summary: Get all categories
+    description: Retrieve all categories as a nested tree structure
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Category list (tree structure)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                data:
+                  type: object
+                  properties:
+                    categories:
+                      type: array
+                      items:
+                        $ref: #/components/schemas/ProductCategory
+      '401':
+        description: Unauthorized
+
+/api/admin/products-category/create:
+  get:
+    tags:
+      - Admin - Categories
+    summary: Get category create page
+    description: Get parent categories list for category creation form
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Create page data with parent categories
+      '401':
+        description: Unauthorized
+  post:
+    tags:
+      - Admin - Categories
+    summary: Create a new category
+    description: Create a new product category with optional thumbnail
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - title
+            properties:
+              title:
+                type: string
+                description: Category title
+              parent_id:
+                type: string
+                description: Parent category ID (empty for root category)
+              description:
+                type: string
+                description: Category description
+              status:
+                type: string
+                enum: [active, inactive]
+                description: Category status
+              position:
+                type: number
+                description: Display position
+              thumbnail:
+                type: string
+                format: binary
+                description: Category thumbnail image
+    responses:
+      '200':
+        description: Category created successfully
+      '400':
+        description: Validation error
+      '401':
+        description: Unauthorized
+
+/api/admin/products-category/edit/{id}:
+  get:
+    tags:
+      - Admin - Categories
+    summary: Get category for editing
+    description: Retrieve category data and parent categories list for edit form
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Category ID
+    responses:
+      '200':
+        description: Category data with parent categories
+      '401':
+        description: Unauthorized
+      '404':
+        description: Category not found
+  patch:
+    tags:
+      - Admin - Categories
+    summary: Update a category
+    description: Update category details including optional thumbnail upload
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Category ID
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              parent_id:
+                type: string
+              description:
+                type: string
+              status:
+                type: string
+                enum: [active, inactive]
+              position:
+                type: number
+              thumbnail:
+                type: string
+                format: binary
+    responses:
+      '200':
+        description: Category updated successfully
+      '401':
+        description: Unauthorized
+      '404':
+        description: Category not found
+
+/api/admin/products-category/detail/{id}:
+  get:
+    tags:
+      - Admin - Categories
+    summary: Get category detail
+    description: Retrieve full category details by ID
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Category ID
+    responses:
+      '200':
+        description: Category detail
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                data:
+                  type: object
+                  properties:
+                    category:
+                      $ref: #/components/schemas/ProductCategory
+      '401':
+        description: Unauthorized
+      '404':
+        description: Category not found
+
+/api/admin/products-category/delete/{id}:
+  delete:
+    tags:
+      - Admin - Categories
+    summary: Delete a category
+    description: Soft delete a category. Fails if category has child categories.
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Category ID
+    responses:
+      '200':
+        description: Category deleted
+      '400':
+        description: Cannot delete - category has children
+      '401':
+        description: Unauthorized

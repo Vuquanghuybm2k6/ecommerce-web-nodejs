@@ -1,0 +1,532 @@
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter JWT access token
+    CartId:
+      type: apiKey
+      in: header
+      name: x-cart-id
+      description: Cart ID for guest user cart management
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+
+    Pagination:
+      type: object
+      properties:
+        currentPage:
+          type: number
+        limitItem:
+          type: number
+        totalItem:
+          type: number
+        skip:
+          type: number
+        totalPage:
+          type: number
+
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+
+    # ───── Products ─────
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        product_category_id:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        discountPercentage:
+          type: number
+        stock:
+          type: number
+        thumbnail:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        position:
+          type: number
+        featured:
+          type: string
+        slug:
+          type: string
+        priceNew:
+          type: number
+          description: Price after discount
+        category:
+          $ref: '#/components/schemas/ProductCategory'
+        deleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProductInfo:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        thumbnail:
+          type: string
+        slug:
+          type: string
+        price:
+          type: number
+        priceNew:
+          type: number
+        discountPercentage:
+          type: number
+
+    ProductListResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            products:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    ProductDetailResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            product:
+              $ref: '#/components/schemas/Product'
+
+    # ───── Product Categories ─────
+    ProductCategory:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        parent_id:
+          type: string
+        description:
+          type: string
+        thumbnail:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        position:
+          type: number
+        slug:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductCategory'
+        deleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ───── Cart ─────
+    Cart:
+      type: object
+      properties:
+        _id:
+          type: string
+        user_id:
+          type: string
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartProduct'
+        totalPrice:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CartProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+        quantity:
+          type: number
+        productInfo:
+          $ref: '#/components/schemas/ProductInfo'
+        totalPrice:
+          type: number
+
+    CartResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            cart:
+              $ref: '#/components/schemas/Cart'
+
+    # ───── Order ─────
+    Order:
+      type: object
+      properties:
+        _id:
+          type: string
+        cart_id:
+          type: string
+        userInfo:
+          type: object
+          properties:
+            fullName:
+              type: string
+            phone:
+              type: string
+            address:
+              type: string
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderProduct'
+        status:
+          type: string
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+        totalPrice:
+          type: number
+        orderCode:
+          type: string
+        user_id:
+          type: string
+        paymentMethod:
+          type: string
+        shippingMethod:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    OrderProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+        price:
+          type: number
+        discountPercentage:
+          type: number
+        priceNew:
+          type: number
+        quantity:
+          type: number
+        productInfo:
+          $ref: '#/components/schemas/ProductInfo'
+        totalPrice:
+          type: number
+
+    OrderResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            order:
+              $ref: '#/components/schemas/Order'
+
+    OrderSuccessResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            orderId:
+              type: string
+            orderCode:
+              type: string
+
+    # ───── User ─────
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+        authType:
+          type: string
+          enum: [local, google]
+        status:
+          type: string
+          enum: [active, inactive]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserRegisterResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+            cartId:
+              type: string
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+
+    UserInfoResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+
+    # ───── Account (Admin) ─────
+    Account:
+      type: object
+      properties:
+        _id:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+        role_id:
+          type: string
+        authType:
+          type: string
+          enum: [local, google]
+        status:
+          type: string
+          enum: [active, inactive]
+        token:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ───── Role (Admin) ─────
+    Role:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ───── Settings ─────
+    Setting:
+      type: object
+      properties:
+        _id:
+          type: string
+        websiteName:
+          type: string
+        logo:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        copyright:
+          type: string
+
+    # ───── Dashboard ─────
+    DashboardStatistic:
+      type: object
+      properties:
+        categoryProduct:
+          type: object
+          properties:
+            total:
+              type: number
+            active:
+              type: number
+            inactive:
+              type: number
+        product:
+          type: object
+          properties:
+            total:
+              type: number
+            active:
+              type: number
+            inactive:
+              type: number
+        account:
+          type: object
+          properties:
+            total:
+              type: number
+            active:
+              type: number
+            inactive:
+              type: number
+        user:
+          type: object
+          properties:
+            total:
+              type: number
+            active:
+              type: number
+            inactive:
+              type: number
+        order:
+          type: object
+          properties:
+            total:
+              type: number
+            pending:
+              type: number
+            confirmed:
+              type: number
+            shipped:
+              type: number
+            delivered:
+              type: number
+            cancelled:
+              type: number
+        revenue:
+          type: number
+        revenueByDay:
+          type: array
+          items:
+            type: object
+            properties:
+              _id:
+                type: object
+                properties:
+                  day:
+                    type: number
+                  month:
+                    type: number
+                  year:
+                    type: number
+              totalRevenue:
+                type: number
+
+    DashboardResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            statistic:
+              $ref: '#/components/schemas/DashboardStatistic'
+
+    # ───── Error ─────
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string

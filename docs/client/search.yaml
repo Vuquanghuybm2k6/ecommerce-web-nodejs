@@ -1,0 +1,35 @@
+/api/search:
+  get:
+    tags:
+      - Client - Search
+    summary: Search products by keyword
+    description: Search products by keyword matching product title
+    security: []
+    parameters:
+      - name: keyword
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Search keyword (required)
+    responses:
+      '200':
+        description: Search results with keyword
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                message:
+                  type: string
+                data:
+                  type: object
+                  properties:
+                    keyword:
+                      type: string
+                    products:
+                      type: array
+                      items:
+                        $ref: #/components/schemas/Product

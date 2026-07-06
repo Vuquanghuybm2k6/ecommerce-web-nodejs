@@ -1,0 +1,63 @@
+/api/admin/settings/general:
+  get:
+    tags:
+      - Admin - Settings
+    summary: Get general settings
+    description: Retrieve general site settings (website name, logo, contact info, etc.)
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: General settings data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                data:
+                  type: object
+                  properties:
+                    setting:
+                      $ref: #/components/schemas/Setting
+      '401':
+        description: Unauthorized
+  patch:
+    tags:
+      - Admin - Settings
+    summary: Update general settings
+    description: Update general site settings including logo upload
+    security:
+      - BearerAuth: []
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              websiteName:
+                type: string
+                description: Website name
+              phone:
+                type: string
+                description: Contact phone
+              email:
+                type: string
+                format: email
+                description: Contact email
+              address:
+                type: string
+                description: Business address
+              copyright:
+                type: string
+                description: Copyright text
+              logo:
+                type: string
+                format: binary
+                description: Website logo image
+    responses:
+      '200':
+        description: Settings updated
+      '401':
+        description: Unauthorized

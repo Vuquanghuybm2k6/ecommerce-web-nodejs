@@ -1,0 +1,249 @@
+/api/admin/accounts:
+  get:
+    tags:
+      - Admin - Accounts
+    summary: List admin accounts
+    description: Get all admin accounts with pagination and search
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: keyword
+        in: query
+        schema:
+          type: string
+        description: Search keyword
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+        description: Page number
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 10
+        description: Items per page
+    responses:
+      '200':
+        description: Account list
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: number
+                data:
+                  type: object
+                  properties:
+                    accounts:
+                      type: array
+                      items:
+                        $ref: #/components/schemas/Account
+      '401':
+        description: Unauthorized
+
+/api/admin/accounts/create:
+  get:
+    tags:
+      - Admin - Accounts
+    summary: Get account create page
+    description: Get roles list for account creation form
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Create page data (roles list)
+      '401':
+        description: Unauthorized
+  post:
+    tags:
+      - Admin - Accounts
+    summary: Create a new admin account
+    description: Create a new admin account with role assignment
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - fullName
+              - email
+              - password
+            properties:
+              fullName:
+                type: string
+                description: Account full name
+              email:
+                type: string
+                format: email
+                description: Account email
+              password:
+                type: string
+                format: password
+                description: Account password
+              phone:
+                type: string
+                description: Phone number
+              role_id:
+                type: string
+                description: Role ID
+              status:
+                type: string
+                enum: [active, inactive]
+                description: Account status
+              avatar:
+                type: string
+                format: binary
+                description: Avatar image
+    responses:
+      '200':
+        description: Account created
+      '400':
+        description: Validation error or email exists
+      '401':
+        description: Unauthorized
+
+/api/admin/accounts/edit/{id}:
+  get:
+    tags:
+      - Admin - Accounts
+    summary: Get account for editing
+    description: Retrieve account data with roles list for edit form
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Account ID
+    responses:
+      '200':
+        description: Account data with roles
+      '401':
+        description: Unauthorized
+      '404':
+        description: Account not found
+  patch:
+    tags:
+      - Admin - Accounts
+    summary: Update an admin account
+    description: Update admin account details including role, status, and avatar
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Account ID
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              fullName:
+                type: string
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                format: password
+              phone:
+                type: string
+              role_id:
+                type: string
+              status:
+                type: string
+                enum: [active, inactive]
+              avatar:
+                type: string
+                format: binary
+    responses:
+      '200':
+        description: Account updated
+      '401':
+        description: Unauthorized
+      '404':
+        description: Account not found
+
+/api/admin/accounts/detail/{id}:
+  get:
+    tags:
+      - Admin - Accounts
+    summary: Get account detail
+    description: Retrieve full admin account details by ID with role info
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Account ID
+    responses:
+      '200':
+        description: Account detail
+      '401':
+        description: Unauthorized
+      '404':
+        description: Account not found
+
+/api/admin/accounts/delete/{id}:
+  delete:
+    tags:
+      - Admin - Accounts
+    summary: Delete an admin account
+    description: Soft delete an admin account
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Account ID
+    responses:
+      '200':
+        description: Account deleted
+      '401':
+        description: Unauthorized
+
+/api/admin/accounts/change-status/{status}/{id}:
+  patch:
+    tags:
+      - Admin - Accounts
+    summary: Change account status
+    description: Toggle admin account status between active and inactive
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: status
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [active, inactive]
+        description: New status
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Account ID
+    responses:
+      '200':
+        description: Status changed
+      '401':
+        description: Unauthorized
