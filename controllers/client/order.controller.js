@@ -1,6 +1,7 @@
 const Order = require("../../models/order.model")
 const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
+const mongoose = require("mongoose")
 
 const enrichOrder = async (order) => {
   if (!order) return null
@@ -66,4 +67,65 @@ module.exports.detail = async (req, res) => {
     message: "Thành công",
     data: { order: enrichedOrder }
   })
+}
+
+// [PATCH]: /api/orders/cancel/:orderId
+module.exports.cancel = async (req, res) => {
+  const userId = req.user.id
+  const orderId = req.params.orderId
+
+  const order = await Order.findOne({
+    _id: orderId,
+    user_id: userId,
+    deleted: false
+  })
+
+  if (!order) {
+    return res.status(404).json({
+      code: 404,
+      message: "Không tìm thấy đơn hàng"
+    })
+  }
+
+  if (order.status !== "pending") {
+    return res.status(400).json({
+      code: 400,
+      message: "Chỉ có thể hủy đơn hàng đang chờ xác nhận"
+    })
+  }
+
+  const session = await mongoose.startSession()
+  session.startTransaction()
+
+  try {
+    for (const product of order.products) {
+      await Product.updateOne(
+        { _id: product.product_id },
+        { $inc: { stock: product.quantity } },
+        { session }
+      )
+    }
+
+    await Order.updateOne(
+      { _id: orderId },
+      { $set: { status: "cancelled" } },
+      { session }
+    )
+
+    await session.commitTransaction()
+
+    res.json({
+      code: 200,
+      message: "Hủy đơn hàng thành công"
+    })
+  } catch (error) {
+    await session.abortTransaction()
+    console.error(error)
+    res.status(500).json({
+      code: 500,
+      message: "Hủy đơn hàng thất bại"
+    })
+  } finally {
+    session.endSession()
+  }
 }
