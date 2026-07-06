@@ -1,6 +1,7 @@
 const Order = require("../../models/order.model")
 const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
+const paginationHelper = require("../../helpers/pagination")
 const mongoose = require("mongoose")
 
 const enrichOrder = async (order) => {
@@ -26,10 +27,18 @@ module.exports.enrichOrder = enrichOrder
 module.exports.index = async (req, res) => {
   const userId = req.user.id
 
-  const orders = await Order.find({
-    user_id: userId,
-    deleted: false
+  const find = { user_id: userId, deleted: false }
+
+  const totalOrders = await Order.countDocuments(find)
+  const pagination = paginationHelper(req.query, totalOrders, {
+    currentPage: 1,
+    limitItem: 10
   })
+  pagination.totalItem = totalOrders
+
+  const orders = await Order.find(find)
+    .limit(pagination.limitItem)
+    .skip(pagination.skip)
     .sort({ createdAt: -1 })
     .lean()
 
@@ -38,7 +47,7 @@ module.exports.index = async (req, res) => {
   res.json({
     code: 200,
     message: "Thành công",
-    data: { orders: enrichedOrders }
+    data: { orders: enrichedOrders, pagination }
   })
 }
 
