@@ -11,6 +11,8 @@ const mongoose = require("mongoose")
 const orderStatuses = [
   { name: "Tất cả", class: "", status: "" },
   { name: "Chờ xác nhận", class: "", status: "pending" },
+  {name: "Chờ thanh toán VNPAY", class: "", status: "pending_vnpay"},
+  { name: "Thanh toán thất bại", class: "", status: "payment_failed" },
   { name: "Đã xác nhận", class: "", status: "confirmed" },
   { name: "Đang giao hàng", class: "", status: "shipped" },
   { name: "Đã giao hàng", class: "", status: "delivered" },
@@ -90,6 +92,16 @@ const sendStatusEmail = async (order, newStatus, reason) => {
   const total = (order.totalPrice || 0).toLocaleString("vi-VN")
 
   switch (newStatus) {
+    case "pending_vnpay":
+      subject = `Đơn hàng ${orderCode} sẵn sàng thanh toán lại`
+      body = `<p>Đơn hàng <b>${orderCode}</b> của bạn đã sẵn sàng để thanh toán lại qua VNPay.</p>
+              <p>Vui lòng truy cập website và tiến hành thanh toán.</p>`
+      break
+    case "payment_failed":
+      subject = `Đơn hàng ${orderCode} thanh toán thất bại`
+      body = `<p>Thanh toán cho đơn hàng <b>${orderCode}</b> không thành công.</p>
+              <p>Vui lòng kiểm tra lại thông tin hoặc thử phương thức thanh toán khác.</p>`
+      break
     case "confirmed":
       subject = `Đơn hàng ${orderCode} đã được xác nhận`
       body = `<p>Đơn hàng <b>${orderCode}</b> của bạn đã được xác nhận.</p>
@@ -123,7 +135,7 @@ const sendStatusEmail = async (order, newStatus, reason) => {
 module.exports.changeStatus = async (req, res) => {
   const id = req.params.id
   const newStatus = req.body.status
-  const validStatuses = ["pending", "confirmed", "shipped", "delivered", "cancelled"]
+  const validStatuses = ["pending", "pending_vnpay", "payment_failed", "confirmed", "shipped", "delivered", "cancelled"]
   if (!validStatuses.includes(newStatus)) {
     return res.status(400).json({ code: 400, message: "Trạng thái không hợp lệ" })
   }
@@ -178,7 +190,7 @@ module.exports.changeStatus = async (req, res) => {
     } finally {
       session.endSession()
     }
-  } else if (newStatus === "cancelled" && order.status !== "pending") {
+  } else if (newStatus === "cancelled" && !["pending", "pending_vnpay", "payment_failed"].includes(order.status)) {
     const session = await mongoose.startSession()
     session.startTransaction()
     try {

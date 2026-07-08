@@ -96,7 +96,7 @@ module.exports.cancel = async (req, res) => {
     })
   }
 
-  if (order.status !== "pending") {
+  if (order.status !== "pending" && order.status !== "pending_vnpay" && order.status !== "payment_failed") {
     return res.status(400).json({
       code: 400,
       message: "Chỉ có thể hủy đơn hàng đang chờ xác nhận"

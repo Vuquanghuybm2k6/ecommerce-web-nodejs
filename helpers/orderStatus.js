@@ -1,5 +1,7 @@
 const VALID_TRANSITIONS = {
   pending:    ["confirmed", "cancelled"],
+  pending_vnpay: ["pending", "payment_failed", "cancelled"],
+  payment_failed: ["pending_vnpay", "cancelled"],
   confirmed:  ["shipped", "cancelled"],
   shipped:    ["delivered"],
   delivered:  [],
