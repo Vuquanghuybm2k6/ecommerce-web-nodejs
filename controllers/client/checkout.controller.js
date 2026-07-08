@@ -5,7 +5,8 @@ const productHelper = require("../../helpers/product")
 const sendMailHelper = require("../../helpers/sendMail")
 const mongoose = require("mongoose")
 const { enrichCartData } = require("./cart.controller")
-
+const User = require("../../models/user.model") 
+const vnpayHelper = require("../../helpers/vnpay.helper")
 // [GET]: /checkout
 module.exports.index = async (req,res)=>{
   const cartId = req.cartId
@@ -50,16 +51,17 @@ module.exports.order = async (req,res)=>{
 
   const orderCode = "DH" + Date.now().toString().slice(-8) // tạo mã đơn hàng
 
+  const isVnPay = req.body.paymentMethod === "vnpay"
   const objectOrder = {
     cart_id: cartId,
-    userInfo: userInfo,
-    products : products,
-    status: 'pending',
+    userInfo,
+    products,
+    status: isVnPay? 'pending_vnpay': 'pending',
     user_id: req.user?.id || '',
-    paymentMethod: req.body.paymentMethod || 'COD',
+    paymentMethod: isVnPay ? 'vnpay' : 'cod',
     shippingMethod: req.body.shippingMethod || '',
-    totalPrice: totalPrice,
-    orderCode: orderCode
+    totalPrice,
+    orderCode
   }
 
   const session = await mongoose.startSession()
@@ -76,15 +78,13 @@ module.exports.order = async (req,res)=>{
 
     await session.commitTransaction()
 
-    if(req.user?.email){
-      sendMailHelper.sendMail(
-        req.user.email,
-        `Xác nhận đơn hàng ${orderCode}`,
-        `<p>Cảm ơn bạn đã đặt hàng.</p>
-         <p>Mã đơn: <b>${orderCode}</b></p>
-         <p>Tổng tiền: <b>${totalPrice.toLocaleString('vi-VN')}₫</b></p>
-         <p>Chúng tôi sẽ giao hàng trong thời gian sớm nhất.</p>`
-      )
+    if (isVnPay) {
+      const paymentUrl = vnpayHelper.createPaymentUrl(order, req)
+      return res.status(200).json({
+        code: 200,
+        message: "Chuyển hướng đến cổng thanh toán VNPay",
+        data: { paymentUrl, orderId: order.id, orderCode }
+      })
     }
 
     res.status(200).json({ code: 200, message: "Đặt hàng thành công", data: { orderId: order.id, orderCode } })
@@ -115,4 +115,51 @@ module.exports.success = async (req,res)=>{
     message: "Thành công",
     data: { order: order }
   })
+}
+
+// [GET]: /checkout/vnpay-return
+module.exports.vnpayReturn = async (req, res) => {
+  const result = vnpayHelper.verifyReturn(req.query)
+
+  const order = await Order.findOne({ orderCode: result.txnRef })
+  if (!order) {
+    return res.redirect(`${process.env.VNP_FRONTEND_RETURN_URL}?success=false&message=Order not found`)
+  }
+
+  const paymentInfo = {
+    transactionId: result.transactionNo,
+    bankCode: result.bankCode,
+    payDate: result.payDate,
+    paymentStatus: result.isValid && result.responseCode === '00' ? 'success' : 'failed'
+  }
+
+  const newStatus = (result.isValid && result.responseCode === '00') ? 'pending' : 'payment_failed'
+
+  await Order.updateOne(
+    { _id: order._id },
+    { $set: { status: newStatus, paymentInfo } }
+  )
+
+  const frontendUrl = new URL(process.env.VNP_FRONTEND_RETURN_URL)
+  frontendUrl.searchParams.set('success', newStatus === 'pending' ? 'true' : 'false')
+  if (newStatus === 'pending') {
+    frontendUrl.searchParams.set('orderId', order._id.toString())
+  }
+
+  if (newStatus === 'pending') {
+    if (order.user_id) {
+      const user = await User.findOne({ _id: order.user_id })
+      if (user?.email) {
+        sendMailHelper.sendMail(
+          user.email,
+          `Xác nhận đơn hàng ${order.orderCode}`,
+          `<p>Cảm ơn bạn đã thanh toán.</p>
+          <p>Mã đơn: <b>${order.orderCode}</b></p>
+          <p>Tổng tiền: <b>${order.totalPrice.toLocaleString('vi-VN')}₫</b></p>
+          <p>Chúng tôi sẽ giao hàng trong thời gian sớm nhất.</p>`
+        )
+      }
+    }
+  }
+  res.redirect(frontendUrl.toString())
 }

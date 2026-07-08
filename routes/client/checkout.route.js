@@ -5,4 +5,5 @@ const validate = require("../../validates/client/checkout.validate")
 router.get("/",validate.index,controller.index)
 router.post("/order",validate.order,controller.order)
 router.get("/success/:orderId",controller.success)
+router.get("/vnpay-return", controller.vnpayReturn)
 module.exports =router
