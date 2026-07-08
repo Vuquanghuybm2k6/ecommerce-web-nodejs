@@ -1,6 +1,7 @@
 const mongoose = require("mongoose")
 const orderSchema = new mongoose.Schema({
   cart_id: String,
+  user_id: String,
   userInfo :{
     fullName: String,
     phone: String,
@@ -17,7 +18,7 @@ const orderSchema = new mongoose.Schema({
   ],
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+    enum: ['pending', 'pending_vnpay', 'payment_failed', 'confirmed', 'shipped', 'delivered', 'cancelled'],
     default: 'pending'
   },
   totalPrice: {
@@ -28,8 +29,17 @@ const orderSchema = new mongoose.Schema({
     type: String,
     unique: true
   },
-  user_id: String,
-  paymentMethod: String,
+  paymentMethod: {
+    type: String,
+    enum: ['cod', 'vnpay'],
+    default: 'cod'
+  },
+  paymentInfo: {
+    transactionId: String, // vnp_TransactionNo
+    bankCode: String, // vnp_BankCode
+    payDate: String, // vnp_PayDate
+    paymentStatus: String // 'success' or 'failed'
+  },
   shippingMethod: String,
   
   deleted: {
