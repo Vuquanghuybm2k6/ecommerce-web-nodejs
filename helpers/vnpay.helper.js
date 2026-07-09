@@ -17,10 +17,17 @@ function getIpAddr(req) {
 }
 
 module.exports.createPaymentUrl = (order, req) => { // tạo url thanh toán vnpay
+  const pad = (n) => n.toString().padStart(2, '0')
+
   const date = new Date()
-  const createDate = date.toISOString().replace(/[-:T.Z]/g, '').slice(0, 14)
-  const expireDate = new Date(date.getTime() + 15 * 60 * 1000)
-    .toISOString().replace(/[-:T.Z]/g, '').slice(0, 14)
+  const createDate =
+    `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}` +
+    `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`
+
+  const expire = new Date(date.getTime() + 15 * 60 * 1000)
+  const expireDate =
+    `${expire.getFullYear()}${pad(expire.getMonth() + 1)}${pad(expire.getDate())}` +
+    `${pad(expire.getHours())}${pad(expire.getMinutes())}${pad(expire.getSeconds())}`
 
   const vnpParams = { // đây là toàn bộ dữ liệu để gửi sang vnpay
     vnp_Version: '2.1.0',
