@@ -2,10 +2,9 @@ const Order = require("../../models/order.model")
 const Cart = require("../../models/cart.model")
 const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
-const sendMailHelper = require("../../helpers/sendMail")
+const { sendOrderNotification } = require("../../helpers/orderNotification")
 const mongoose = require("mongoose")
 const { enrichCartData } = require("./cart.controller")
-const User = require("../../models/user.model") 
 const vnpayHelper = require("../../helpers/vnpay.helper")
 // [GET]: /checkout
 module.exports.index = async (req,res)=>{
@@ -146,20 +145,6 @@ module.exports.vnpayReturn = async (req, res) => {
     frontendUrl.searchParams.set('orderId', order._id.toString())
   }
 
-  if (newStatus === 'pending') {
-    if (order.user_id) {
-      const user = await User.findOne({ _id: order.user_id })
-      if (user?.email) {
-        sendMailHelper.sendMail(
-          user.email,
-          `Xác nhận đơn hàng ${order.orderCode}`,
-          `<p>Cảm ơn bạn đã thanh toán.</p>
-          <p>Mã đơn: <b>${order.orderCode}</b></p>
-          <p>Tổng tiền: <b>${order.totalPrice.toLocaleString('vi-VN')}₫</b></p>
-          <p>Chúng tôi sẽ giao hàng trong thời gian sớm nhất.</p>`
-        )
-      }
-    }
-  }
+  sendOrderNotification(order, newStatus)
   res.redirect(frontendUrl.toString())
 }

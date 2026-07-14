@@ -2,6 +2,7 @@ const Order = require("../../models/order.model")
 const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
 const paginationHelper = require("../../helpers/pagination")
+const { sendOrderNotification } = require("../../helpers/orderNotification")
 const mongoose = require("mongoose")
 
 const enrichOrder = async (order) => {
@@ -107,6 +108,8 @@ module.exports.cancel = async (req, res) => {
     { _id: orderId },
     { $set: { status: "cancelled" } }
   )
+
+  sendOrderNotification(order, "cancelled")
 
   res.json({
     code: 200,

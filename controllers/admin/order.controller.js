@@ -1,11 +1,10 @@
 const Order = require("../../models/order.model")
 const Product = require("../../models/product.model")
-const User = require("../../models/user.model")
 const paginationHelper = require("../../helpers/pagination")
 const searchHelper = require("../../helpers/search")
 const { enrichOrder } = require("../client/order.controller")
 const { isValidTransition } = require("../../helpers/orderStatus")
-const sendMailHelper = require("../../helpers/sendMail")
+const { sendOrderNotification } = require("../../helpers/orderNotification")
 const mongoose = require("mongoose")
 
 const orderStatuses = [
@@ -80,55 +79,6 @@ module.exports.detail = async (req, res) => {
   } catch (error) {
     res.status(400).json({ code: 400, message: "Lỗi" })
   }
-}
-
-const sendStatusEmail = async (order, newStatus, reason) => {
-  if (!order.user_id) return
-  const user = await User.findOne({ _id: order.user_id }).select("email")
-  if (!user?.email) return
-
-  let subject, body
-  const orderCode = order.orderCode || ""
-  const total = (order.totalPrice || 0).toLocaleString("vi-VN")
-
-  switch (newStatus) {
-    case "pending_vnpay":
-      subject = `Đơn hàng ${orderCode} sẵn sàng thanh toán lại`
-      body = `<p>Đơn hàng <b>${orderCode}</b> của bạn đã sẵn sàng để thanh toán lại qua VNPay.</p>
-              <p>Vui lòng truy cập website và tiến hành thanh toán.</p>`
-      break
-    case "payment_failed":
-      subject = `Đơn hàng ${orderCode} thanh toán thất bại`
-      body = `<p>Thanh toán cho đơn hàng <b>${orderCode}</b> không thành công.</p>
-              <p>Vui lòng kiểm tra lại thông tin hoặc thử phương thức thanh toán khác.</p>`
-      break
-    case "confirmed":
-      subject = `Đơn hàng ${orderCode} đã được xác nhận`
-      body = `<p>Đơn hàng <b>${orderCode}</b> của bạn đã được xác nhận.</p>
-              <p>Tổng tiền: <b>${total}₫</b></p>
-              <p>Chúng tôi sẽ giao hàng trong thời gian sớm nhất.</p>`
-      break
-    case "shipped":
-      subject = `Đơn hàng ${orderCode} đang được giao`
-      body = `<p>Đơn hàng <b>${orderCode}</b> của bạn đang được giao.</p>
-              <p>Tổng tiền: <b>${total}₫</b></p>
-              <p>Vui lòng chú ý điện thoại để nhận hàng.</p>`
-      break
-    case "delivered":
-      subject = `Đơn hàng ${orderCode} đã giao thành công`
-      body = `<p>Đơn hàng <b>${orderCode}</b> đã được giao thành công.</p>
-              <p>Cảm ơn bạn đã mua hàng!</p>`
-      break
-    case "cancelled":
-      subject = `Đơn hàng ${orderCode} đã bị hủy`
-      body = `<p>Đơn hàng <b>${orderCode}</b> của bạn đã bị hủy.</p>`
-      if (reason) body += `<p>Lý do: ${reason}</p>`
-      break
-    default:
-      return
-  }
-
-  sendMailHelper.sendMail(user.email, subject, body)
 }
 
 // [PATCH]: /admin/orders/change-status/:id
@@ -224,7 +174,7 @@ module.exports.changeStatus = async (req, res) => {
     await Order.updateOne({ _id: id }, { $set: { status: newStatus } })
   }
 
-  sendStatusEmail(order, newStatus, req.body.reason)
+  sendOrderNotification(order, newStatus, req.body.reason)
 
   res.json({
     code: 200,

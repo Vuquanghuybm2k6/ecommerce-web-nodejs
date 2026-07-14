@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["review_deleted"],
+    enum: ["review_deleted", "order_status_changed"],
     required: true
   },
   title: {
