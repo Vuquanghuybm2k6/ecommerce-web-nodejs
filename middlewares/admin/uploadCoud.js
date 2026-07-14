@@ -40,3 +40,32 @@ module.exports.upload = (req, res, next) =>{
     next(); 
   }
 }
+
+module.exports.uploadMultiple = (req, res, next) => {
+  if (req.files && req.files.length > 0) {
+    const uploadPromises = req.files.map(file => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "reviews" },
+          (error, result) => {
+            if (result) resolve(result.secure_url)
+            else reject(error)
+          }
+        )
+        streamifier.createReadStream(file.buffer).pipe(stream)
+      })
+    })
+
+    Promise.all(uploadPromises)
+      .then(urls => {
+        req.body.images = urls
+        next()
+      })
+      .catch(() => {
+        res.status(500).json({ code: 500, message: "Upload ảnh thất bại" })
+      })
+  } else {
+    req.body.images = []
+    next()
+  }
+}

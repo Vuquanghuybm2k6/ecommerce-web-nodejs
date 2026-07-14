@@ -8,6 +8,7 @@ const oauthRoutes = require("./oauth.route")
 const myAccountRoutes = require("./my-account.route")
 const orderRoutes = require("./order.route")
 const settingRoutes = require("./setting.route")
+const reviewRoutes = require("./review.route")
 const authController = require("../../controllers/admin/auth.controller")
 const systemConfig = require("../../config/system")
 const authMiddleware = require("../../middlewares/admin/auth.middleware")
@@ -24,4 +25,5 @@ module.exports = (app) =>{
   app.use("/api" + PATH_ADMIN + '/my-account', authMiddleware.requireAuth, myAccountRoutes)
   app.use("/api" + PATH_ADMIN + '/orders', authMiddleware.requireAuth, orderRoutes)
   app.use("/api" + PATH_ADMIN + '/settings', authMiddleware.requireAuth, settingRoutes)
+  app.use("/api" + PATH_ADMIN + '/reviews', authMiddleware.requireAuth, reviewRoutes)
 }

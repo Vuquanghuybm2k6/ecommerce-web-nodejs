@@ -35,6 +35,14 @@ const productSchema = new mongoose.Schema({
     account_id: String,
     deletedAt: Date,
   },
+  ratingAvg: {
+    type: Number,
+    default: 0
+  },
+  ratingCount: {
+    type: Number,
+    default: 0
+  },
   updatedBy : [ // trường updatedBy phải là một mảng bởi vì một bản ghi có thể sẽ được update nhiều lần
     {
       account_id: String,
