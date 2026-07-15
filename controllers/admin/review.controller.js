@@ -5,6 +5,7 @@ const Notification = require("../../models/notification.model")
 const paginationHelper = require("../../helpers/pagination")
 const updateProductRating = require("../../helpers/updateProductRating")
 const { sendMail } = require("../../helpers/sendMail")
+const { logger } = require("../../helpers/logger")
 
 // [GET] /api/admin/reviews
 module.exports.index = async (req, res) => {
@@ -70,7 +71,7 @@ module.exports.index = async (req, res) => {
       }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi lấy danh sách đánh giá', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi lấy danh sách đánh giá" })
   }
 }
@@ -97,7 +98,7 @@ module.exports.detail = async (req, res) => {
       data: { review }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi lấy chi tiết đánh giá', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi" })
   }
 }
@@ -166,7 +167,7 @@ module.exports.deleteReview = async (req, res) => {
       message: "Đã xóa đánh giá và gửi thông báo đến người dùng"
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi xóa đánh giá', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi xóa đánh giá" })
   }
 }

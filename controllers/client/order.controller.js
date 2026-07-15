@@ -3,6 +3,7 @@ const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
 const paginationHelper = require("../../helpers/pagination")
 const { sendOrderNotification } = require("../../helpers/orderNotification")
+const { logAction } = require("../../helpers/logger")
 const mongoose = require("mongoose")
 
 const enrichOrder = async (order) => {
@@ -110,6 +111,12 @@ module.exports.cancel = async (req, res) => {
   )
 
   sendOrderNotification(order, "cancelled")
+
+  logAction('order', 'user_cancel', `User cancelled order ${order.orderCode}`, {
+    orderCode: order.orderCode,
+    orderId: orderId,
+    userId,
+  })
 
   res.json({
     code: 200,

@@ -1,5 +1,6 @@
 const Notification = require("../../models/notification.model")
 const paginationHelper = require("../../helpers/pagination")
+const { logger } = require("../../helpers/logger")
 
 // [GET] /api/notifications
 module.exports.index = async (req, res) => {
@@ -25,7 +26,7 @@ module.exports.index = async (req, res) => {
       data: { notifications, pagination }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi lấy thông báo', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi lấy thông báo" })
   }
 }
@@ -46,7 +47,7 @@ module.exports.markRead = async (req, res) => {
       message: "Đã đánh dấu đã đọc"
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi đánh dấu đã đọc', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi" })
   }
 }
@@ -66,7 +67,7 @@ module.exports.markAllRead = async (req, res) => {
       message: "Đã đánh dấu tất cả đã đọc"
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi đánh dấu tất cả đã đọc', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi" })
   }
 }
@@ -87,7 +88,7 @@ module.exports.count = async (req, res) => {
       data: { unreadCount }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi đếm thông báo', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi" })
   }
 }

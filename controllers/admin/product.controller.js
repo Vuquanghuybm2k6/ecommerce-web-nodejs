@@ -6,6 +6,7 @@ const systemConfig = require("../../config/system")
 const ProductCategory = require("../../models/product-category.model")
 const createTreeHelper = require("../../helpers/createTree")
 const Account = require("../../models/account.model")
+const { logAction } = require("../../helpers/logger")
 
 // [GET]: /admin/products
 module.exports.index = async (req,res) =>{
@@ -85,11 +86,12 @@ module.exports.changeStatus = async (req,res) =>{
   await Product.updateOne({
     _id: id},
   {
-    $set: { status }, // MongoDB KHÔNG cho trộn: field thường (status) và operator ($push)
+    $set: { status },
     $push: {
       updatedBy : updatedBy
     }
   })
+  logAction('product', 'change_status', `Đổi trạng thái sản phẩm ${id}: ${status}`, { productId: id, status, adminId: req.user.id })
   res.json({
     code: 200,
     message: "Cập nhật trạng thái thành công"
@@ -107,9 +109,11 @@ module.exports.changeMulti = async (req,res) =>{
   switch(type){
     case "active":
       await Product.updateMany({_id:{$in:ids}},{$set :{status: "active"}, $push: {updatedBy : updatedBy}})
+      logAction('product', 'change_multi', `Kích hoạt ${ids.length} sản phẩm`, { ids, type, adminId: req.user.id })
       break
     case "inactive":
       await Product.updateMany({_id:{$in:ids}}, {$set:{status: "inactive"}, $push: {updatedBy : updatedBy}})
+      logAction('product', 'change_multi', `Vô hiệu ${ids.length} sản phẩm`, { ids, type, adminId: req.user.id })
       break
     case "delete-all":
       await Product.updateMany(
@@ -124,6 +128,7 @@ module.exports.changeMulti = async (req,res) =>{
            }
           }
         )
+      logAction('product', 'delete_multi', `Xóa ${ids.length} sản phẩm`, { ids, type, adminId: req.user.id })
       break
     case "change-position":
       for(const item of ids){
@@ -131,6 +136,7 @@ module.exports.changeMulti = async (req,res) =>{
         position = parseInt(position)
         await Product.updateOne({_id: id},{$set:{position: position}, $push: {updatedBy: updatedBy}})
       }
+      logAction('product', 'change_multi', `Cập nhật vị trí ${ids.length} sản phẩm`, { ids, type, adminId: req.user.id })
       break
     default:
       break
@@ -156,8 +162,7 @@ module.exports.delete = async (req,res)=>{
        }
       }
     ) 
-  // Không được gộp chung hai cái trường deleted và deletedAt vào chung 1 object vì mongodb cần biết cập nhật những document nào
-  // cập nhật những trường nào
+  logAction('product', 'delete', `Xóa sản phẩm: ${id}`, { productId: id, adminId: req.user.id })
   res.json({
     code: 200,
     message: "Thao tác thành công"
@@ -195,6 +200,7 @@ module.exports.createPost = async (req,res)=>{
   }
   const product = new Product(req.body)
   await product.save()
+  logAction('product', 'create', `Tạo sản phẩm: ${product.title}`, { productId: product.id, adminId: req.user.id })
   res.json({
     code: 200,
     message: "Tạo mới sản phẩm thành công"
@@ -242,6 +248,7 @@ module.exports.editPatch = async (req,res) =>{
       }
   }
     )
+    logAction('product', 'update', `Cập nhật sản phẩm: ${id}`, { productId: id, adminId: req.user.id })
     res.json({
       code: 200,
       message: "Cập nhật thành công sản phẩm"

@@ -4,6 +4,7 @@ const productsCategoryHelper = require("../../helpers/products-category")
 const ProductCategory = require("../../models/product-category.model")
 const paginationHelper = require("../../helpers/pagination")
 const searchHelper = require("../../helpers/search")
+const { logger } = require("../../helpers/logger")
 // [GET]: /products
 module.exports.index = async (req, res) => {
 
@@ -81,7 +82,7 @@ module.exports.category = async (req, res) => {
     })
   }
   catch(error){
-    console.error(error)
+    logger.error('Lỗi lấy sản phẩm theo danh mục', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Không tìm thấy danh mục sản phẩm" })
   }
 }
@@ -110,7 +111,7 @@ module.exports.detail = async (req, res) => {
     })
   }
   catch(error){
-    console.error(error)
+    logger.error('Lỗi lấy chi tiết sản phẩm', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Không tìm thấy sản phẩm" })
   }
 }

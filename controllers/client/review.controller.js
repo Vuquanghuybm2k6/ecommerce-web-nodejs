@@ -4,6 +4,7 @@ const User = require("../../models/user.model")
 const Product = require("../../models/product.model")
 const paginationHelper = require("../../helpers/pagination")
 const updateProductRating = require("../../helpers/updateProductRating")
+const { logger } = require("../../helpers/logger")
 
 const EDIT_DAYS_LIMIT = 15
 
@@ -53,7 +54,7 @@ module.exports.index = async (req, res) => { // lấy ra các review của sản
       data: { reviews: data, pagination }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi lấy danh sách đánh giá', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi lấy danh sách đánh giá" })
   }
 }
@@ -106,7 +107,7 @@ module.exports.create = async (req, res) => {
       data: { review }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi tạo đánh giá', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi tạo đánh giá" })
   }
 }
@@ -159,7 +160,7 @@ module.exports.myReviews = async (req, res) => {
       data: { reviews: data, pagination }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi lấy danh sách đánh giá của tôi', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi lấy danh sách đánh giá" })
   }
 }
@@ -200,7 +201,7 @@ module.exports.userReview = async (req, res) => {
       }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi kiểm tra đánh giá', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi" })
   }
 }
@@ -241,7 +242,7 @@ module.exports.update = async (req, res) => {
       message: "Cập nhật đánh giá thành công"
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi cập nhật đánh giá', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi cập nhật đánh giá" })
   }
 }
@@ -273,7 +274,7 @@ module.exports.delete = async (req, res) => {
       message: "Xóa đánh giá thành công"
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi xóa đánh giá', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi xóa đánh giá" })
   }
 }
@@ -288,7 +289,7 @@ module.exports.uploadImages = async (req, res) => {
       data: { images }
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi upload ảnh', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi upload ảnh" })
   }
 }
@@ -312,7 +313,7 @@ module.exports.helpful = async (req, res) => {
       message: "Cảm ơn bạn đã đánh giá hữu ích"
     })
   } catch (error) {
-    console.error(error)
+    logger.error('Lỗi helpful vote', { error: error.message, stack: error.stack })
     res.status(400).json({ code: 400, message: "Lỗi" })
   }
 }

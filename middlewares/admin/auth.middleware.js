@@ -2,6 +2,7 @@ const systemConfig = require("../../config/system")
 const Account = require("../../models/account.model")
 const Role = require("../../models/role.model")
 const jwtHelper = require("../../helpers/jwt.helper")
+const { logger } = require("../../helpers/logger")
 
 module.exports.requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization
@@ -20,10 +21,12 @@ module.exports.requireAuth = async (req, res, next) => {
       status: "active"
     }).select("-password")
   } catch (err) {
+    logger.warn('Admin token không hợp lệ', { error: err.message })
     return res.status(401).json({ code: 401, message: "Unauthorized" })
   }
 
   if (!account) {
+    logger.warn('Admin token hợp lệ nhưng không tìm thấy tài khoản', { accessToken: accessToken.slice(0, 20) + '...' })
     return res.status(401).json({ code: 401, message: "Unauthorized" })
   }
 

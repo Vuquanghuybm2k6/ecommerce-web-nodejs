@@ -5,6 +5,10 @@ const port = process.env.PORT || 3000
 const path = require("path")
 const systemConfig = require("./config/system")
 const cors = require('cors')
+const morgan = require('morgan')
+const { logger } = require('./helpers/logger')
+
+const morganStream = { write: (message) => logger.info(message.trim(), { category: 'http' }) }
 
 
 app.use(cors({
@@ -18,6 +22,8 @@ app.use(express.urlencoded({ extended: true }))
 
 const cookieParser = require('cookie-parser')
 app.use(cookieParser())
+
+app.use(morgan('combined', { stream: morganStream }))
 
 app.use('/tinymce', express.static(path.join(__dirname, 'node_modules', 'tinymce')))
 
@@ -49,7 +55,13 @@ app.use((req, res) => {
 })
 
 app.use((err, req, res, next) => {
-  console.error(err)
+  logger.error(err.message, {
+    category: 'error',
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+  })
   res.status(500).json({
     code: 500,
     message: "Internal Server Error"
@@ -57,5 +69,5 @@ app.use((err, req, res, next) => {
 })
 
 app.listen(port, () => {
-  console.log(`API server listening on port ${port}`)
+    logger.info(`API server listening on port ${port}`)
 })

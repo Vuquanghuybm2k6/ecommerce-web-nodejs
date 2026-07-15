@@ -4,6 +4,7 @@ const systemConfig = require("../../config/system")
 const bcrypt = require("bcrypt")
 const jwtHelper = require("../../helpers/jwt.helper")
 const adminAuthHelper = require("../../helpers/admin-auth.helper")
+const { logAction } = require("../../helpers/logger")
 
 // [GET]: /admin/auth/login
 module.exports.login = async (req, res) => {
@@ -43,12 +44,14 @@ module.exports.loginPost = async (req, res) => {
     deleted: false
   })
   if (!user) {
+    logAction('auth', 'admin_login_failed', `Admin login failed: email not found`, { email })
     return res.status(400).json({
       code: 400,
       message: "Email không tồn tại"
     })
   }
   if (user.status == "inactive") {
+    logAction('auth', 'admin_login_failed', `Admin login failed: account inactive`, { email })
     return res.status(400).json({
       code: 400,
       message: "Tài khoản này hiện đang bị khóa"
@@ -56,6 +59,7 @@ module.exports.loginPost = async (req, res) => {
   }
 
   if (user.authType == "google") {
+    logAction('auth', 'admin_login_failed', `Admin login failed: Google account`, { email })
     return res.status(400).json({
       code: 400,
       message: "Tài khoản này sử dụng Google để đăng nhập"
@@ -63,6 +67,7 @@ module.exports.loginPost = async (req, res) => {
   }
 
   if (!bcrypt.compareSync(password, user.password)) {
+    logAction('auth', 'admin_login_failed', `Admin login failed: wrong password`, { email })
     return res.status(400).json({
       code: 400,
       message: "Sai mật khẩu"
@@ -70,6 +75,7 @@ module.exports.loginPost = async (req, res) => {
   }
 
   const tokens = await adminAuthHelper.createTokenPair(user, req)
+  logAction('auth', 'admin_login_success', `Admin logged in: ${email}`, { accountId: user.id, email })
   res.json({
     code: 200,
     message: "Đăng nhập thành công",
@@ -88,11 +94,13 @@ module.exports.refreshToken = async (req, res) => {
     const payload = jwtHelper.verifyRefreshToken(refreshToken)
     const tokenRecord = await AdminRefreshToken.findOne({ token: refreshToken, revoked: false })
     if (!tokenRecord) {
+      logAction('auth', 'admin_refresh_failed', 'Admin refresh failed: invalid token')
       return res.status(401).json({ code: 401, message: "Refresh token không hợp lệ" })
     }
 
     const user = await Account.findOne({ _id: payload.id, deleted: false, status: "active" })
     if (!user) {
+      logAction('auth', 'admin_refresh_failed', 'Admin refresh failed: account invalid', { accountId: payload.id })
       return res.status(401).json({ code: 401, message: "Tài khoản không hợp lệ" })
     }
 
@@ -102,8 +110,10 @@ module.exports.refreshToken = async (req, res) => {
     })
 
     const tokens = await adminAuthHelper.createTokenPair(user, req)
+    logAction('auth', 'admin_refresh_success', `Admin token refreshed`, { accountId: user.id, email: user.email })
     return res.json({ code: 200, message: "Refresh token thành công", data: tokens })
   } catch (error) {
+    logAction('auth', 'admin_refresh_failed', 'Admin refresh failed: session expired')
     return res.status(401).json({ code: 401, message: "Phiên đã hết hạn. Vui lòng đăng nhập lại" })
   }
 }
@@ -117,6 +127,7 @@ module.exports.logout = async (req, res) => {
       revokedAt: new Date()
     })
   }
+  logAction('auth', 'admin_logout', 'Admin logged out', { accountId: req.user?.id })
   res.json({
     code: 200,
     message: "Đăng xuất thành công"

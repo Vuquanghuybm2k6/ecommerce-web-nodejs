@@ -3,6 +3,7 @@ const Cart = require("../../models/cart.model")
 const Product = require("../../models/product.model")
 const productHelper = require("../../helpers/product")
 const { sendOrderNotification } = require("../../helpers/orderNotification")
+const { logAction, logger } = require("../../helpers/logger")
 const mongoose = require("mongoose")
 const { enrichCartData } = require("./cart.controller")
 const vnpayHelper = require("../../helpers/vnpay.helper")
@@ -79,6 +80,7 @@ module.exports.order = async (req,res)=>{
 
     if (isVnPay) {
       const paymentUrl = vnpayHelper.createPaymentUrl(order, req)
+      logAction('payment', 'create_order_vnpay', `Order ${orderCode} created via VNPay`, { orderId: order.id, orderCode, paymentMethod: 'vnpay' })
       return res.status(200).json({
         code: 200,
         message: "Chuyển hướng đến cổng thanh toán VNPay",
@@ -86,10 +88,11 @@ module.exports.order = async (req,res)=>{
       })
     }
 
+    logAction('payment', 'create_order_cod', `Order ${orderCode} created via COD`, { orderId: order.id, orderCode, paymentMethod: 'cod' })
     res.status(200).json({ code: 200, message: "Đặt hàng thành công", data: { orderId: order.id, orderCode } })
   } catch (error) {
     await session.abortTransaction() // nếu có lỗi thì mongodb sẽ khôi phục cái session vừa tạo
-    console.error(error)
+    logger.error('Đặt hàng thất bại', { error: error.message, stack: error.stack })
     res.status(500).json({ code: 500, message: "Đặt hàng thất bại" })
   } finally {
     session.endSession()
@@ -146,5 +149,15 @@ module.exports.vnpayReturn = async (req, res) => {
   }
 
   sendOrderNotification(order, newStatus)
+
+  logAction('payment', 'vnpay_return', `VNPay return for order ${order.orderCode}: ${newStatus}`, {
+    orderCode: order.orderCode,
+    orderId: order._id.toString(),
+    newStatus,
+    transactionId: paymentInfo.transactionId,
+    bankCode: paymentInfo.bankCode,
+    responseCode: result.responseCode,
+  })
+
   res.redirect(frontendUrl.toString())
 }

@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { logger } = require('./logger')
 
 module.exports.sendMail = (email, subject, html) => {
   const transporter = nodemailer.createTransport({
@@ -18,9 +19,9 @@ module.exports.sendMail = (email, subject, html) => {
 
   transporter.sendMail(mailOptions, function(error, info){
     if (error) {
-      console.log(error);
+      logger.error('Gửi email thất bại', { error: error.message, to: email, subject });
     } else {
-      console.log('Email sent: ' + info.response);
+      logger.info('Email sent', { to: email, subject, response: info.response });
     }
   });
 }

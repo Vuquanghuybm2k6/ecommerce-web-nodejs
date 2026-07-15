@@ -5,6 +5,7 @@ const searchHelper = require("../../helpers/search")
 const { enrichOrder } = require("../client/order.controller")
 const { isValidTransition } = require("../../helpers/orderStatus")
 const { sendOrderNotification } = require("../../helpers/orderNotification")
+const { logAction, logger } = require("../../helpers/logger")
 const mongoose = require("mongoose")
 
 const orderStatuses = [
@@ -132,7 +133,7 @@ module.exports.changeStatus = async (req, res) => {
       await session.commitTransaction()
     } catch (error) {
       await session.abortTransaction()
-      console.error("Confirm transaction failed:", error)
+      logger.error('Xác nhận giao dịch thất bại', { error: error.message, orderId: id, orderCode: order.orderCode })
       return res.status(500).json({
         code: 500,
         message: error.message || "Xác nhận đơn hàng thất bại"
@@ -162,7 +163,7 @@ module.exports.changeStatus = async (req, res) => {
       await session.commitTransaction()
     } catch (error) {
       await session.abortTransaction()
-      console.error("Cancel transaction failed:", error)
+      logger.error('Hủy giao dịch thất bại', { error: error.message, orderId: id, orderCode: order.orderCode })
       return res.status(500).json({
         code: 500,
         message: error.message || "Hủy đơn hàng thất bại"
@@ -175,6 +176,15 @@ module.exports.changeStatus = async (req, res) => {
   }
 
   sendOrderNotification(order, newStatus, req.body.reason)
+
+  logAction('order', 'change_status', `Order ${order.orderCode} status changed: ${order.status} -> ${newStatus}`, {
+    orderId: id,
+    orderCode: order.orderCode,
+    fromStatus: order.status,
+    toStatus: newStatus,
+    reason: req.body.reason || '',
+    adminId: req.user?.id,
+  })
 
   res.json({
     code: 200,

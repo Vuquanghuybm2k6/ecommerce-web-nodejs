@@ -7,6 +7,7 @@ const Cart = require("../../models/cart.model")
 const jwtHelper = require("../../helpers/jwt.helper")
 const RefreshToken = require("../../models/refresh-token.model")
 const clientAuthHelper = require("../../helpers/auth.helper")
+const { logAction } = require("../../helpers/logger")
 
 const createTokenPair = clientAuthHelper.createTokenPair
 
@@ -38,6 +39,8 @@ module.exports.registerPost = async (req, res) => {
     await cart.save()
   }
 
+  logAction('auth', 'register', `User registered: ${user.email}`, { userId: user.id, email: user.email })
+
   res.json({
     code: 200,
     message: "Đăng kí tài khoản thành công",
@@ -61,17 +64,21 @@ module.exports.loginPost = async (req, res) => {
   const password = req.body.password
   const user = await User.findOne({ email: email, deleted: false })
   if (!user) {
+    logAction('auth', 'login_failed', `Login failed: email not found`, { email })
     return res.status(401).json({ code: 401, message: "Email không tồn tại" })
   }
   if (user.status == "inactive") {
+    logAction('auth', 'login_failed', `Login failed: account inactive`, { email })
     return res.status(401).json({ code: 401, message: "Tài khoản hiện đang bị khóa" })
   }
 
   if (user.authType == "google") {
+    logAction('auth', 'login_failed', `Login failed: Google account`, { email })
     return res.status(401).json({ code: 401, message: "Tài khoản này sử dụng Google để đăng nhập" })
   }
 
   if (!bcrypt.compareSync(password, user.password)) {
+    logAction('auth', 'login_failed', `Login failed: wrong password`, { email })
     return res.status(401).json({ code: 401, message: "Sai mật khẩu" })
   }
 
@@ -107,6 +114,7 @@ module.exports.loginPost = async (req, res) => {
     await finalCart.save()
   }
 
+  logAction('auth', 'login_success', `User logged in: ${email}`, { userId: user.id, email })
   res.json({
     code: 200,
     message: "Đăng nhập thành công",
@@ -130,11 +138,13 @@ module.exports.refreshToken = async (req, res) => {
     const payload = jwtHelper.verifyRefreshToken(refreshToken)
     const tokenRecord = await RefreshToken.findOne({ token: refreshToken, revoked: false })
     if (!tokenRecord) {
+      logAction('auth', 'refresh_failed', 'Refresh failed: invalid token')
       return res.status(401).json({ code: 401, message: "Refresh token không hợp lệ" })
     }
 
     const user = await User.findOne({ _id: payload.id, deleted: false })
     if (!user) {
+      logAction('auth', 'refresh_failed', 'Refresh failed: user not found', { userId: payload.id })
       return res.status(401).json({ code: 401, message: "Người dùng không hợp lệ" })
     }
 
@@ -144,6 +154,7 @@ module.exports.refreshToken = async (req, res) => {
     })
 
     const tokens = await createTokenPair(user, req)
+    logAction('auth', 'refresh_success', `Token refreshed for user ${user.email}`, { userId: user.id, email: user.email })
     return res.json({
       code: 200,
       message: "Refresh token thành công",
@@ -153,6 +164,7 @@ module.exports.refreshToken = async (req, res) => {
       }
     })
   } catch (error) {
+    logAction('auth', 'refresh_failed', 'Refresh failed: session expired')
     return res.status(401).json({ code: 401, message: "Phiên đã hết hạn. Vui lòng đăng nhập lại" })
   }
 }
@@ -168,6 +180,7 @@ module.exports.logout = async (req, res) => {
     })
   }
 
+  logAction('auth', 'logout', `User logged out`, { userId: req.user?.id })
   res.json({ code: 200, message: "Đăng xuất thành công" })
 }
 
