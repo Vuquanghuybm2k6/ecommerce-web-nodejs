@@ -1,6 +1,11 @@
 const ProductCategory = require("../models/product-category.model");
+const redis = require("../config/redis");
 
 module.exports.getSubCategory = async (parentId) => {
+  const cacheKey = `category:subs:${parentId.toString()}`
+  const cached = await redis.get(cacheKey)
+  if (cached) return JSON.parse(cached)
+
   const getCategory = async (parentId) => {
     const subs = await ProductCategory.find({
       parent_id: parentId,
@@ -17,5 +22,7 @@ module.exports.getSubCategory = async (parentId) => {
     return [...subs, ...childResults.flat()];
   };
 
-  return await getCategory(parentId);
+  const result = await getCategory(parentId)
+  await redis.set(cacheKey, JSON.stringify(result), 'EX', 3600)
+  return result
 };

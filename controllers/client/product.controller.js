@@ -4,6 +4,7 @@ const productsCategoryHelper = require("../../helpers/products-category")
 const ProductCategory = require("../../models/product-category.model")
 const paginationHelper = require("../../helpers/pagination")
 const searchHelper = require("../../helpers/search")
+const redis = require("../../config/redis")
 const { logger } = require("../../helpers/logger")
 // [GET]: /products
 module.exports.index = async (req, res) => {
@@ -46,6 +47,12 @@ module.exports.index = async (req, res) => {
 module.exports.category = async (req, res) => {
   try {
     const slug = req.params.slugCategory
+    const page = req.query.page || 1
+    const cacheKey = `products:category:${slug}:page:${page}`
+
+    const cached = await redis.get(cacheKey)
+    if (cached) return res.json(JSON.parse(cached))
+
     const category = await ProductCategory.findOne({
       slug: slug,
       deleted: false
@@ -72,14 +79,18 @@ module.exports.category = async (req, res) => {
     .skip(pagination.skip)
     .sort({position: "desc"})
     const newPriceProducts = productHelper.priceNewProducts(products)
-    res.json({
+
+    const responseData = {
       code: 200,
       message: "Thành công",
       data: {
         products: newPriceProducts,
         pagination: pagination
       }
-    })
+    }
+
+    await redis.set(cacheKey, JSON.stringify(responseData), 'EX', 300)
+    res.json(responseData)
   }
   catch(error){
     logger.error('Lỗi lấy sản phẩm theo danh mục', { error: error.message, stack: error.stack })

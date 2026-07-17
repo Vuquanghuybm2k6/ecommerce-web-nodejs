@@ -6,7 +6,13 @@ const systemConfig = require("../../config/system")
 const ProductCategory = require("../../models/product-category.model")
 const createTreeHelper = require("../../helpers/createTree")
 const Account = require("../../models/account.model")
+const redis = require("../../config/redis")
 const { logAction } = require("../../helpers/logger")
+
+const clearCategoryCache = async () => {
+  const keys = await redis.keys('products:category:*')
+  if (keys.length > 0) await redis.del(...keys)
+}
 
 // [GET]: /admin/products
 module.exports.index = async (req,res) =>{
@@ -92,6 +98,7 @@ module.exports.changeStatus = async (req,res) =>{
     }
   })
   logAction('product', 'change_status', `Đổi trạng thái sản phẩm ${id}: ${status}`, { productId: id, status, adminId: req.user.id })
+  await clearCategoryCache()
   res.json({
     code: 200,
     message: "Cập nhật trạng thái thành công"
@@ -141,6 +148,7 @@ module.exports.changeMulti = async (req,res) =>{
     default:
       break
   }
+  await clearCategoryCache()
   res.json({
     code: 200,
     message: "Thao tác thành công"
@@ -163,6 +171,7 @@ module.exports.delete = async (req,res)=>{
       }
     ) 
   logAction('product', 'delete', `Xóa sản phẩm: ${id}`, { productId: id, adminId: req.user.id })
+  await clearCategoryCache()
   res.json({
     code: 200,
     message: "Thao tác thành công"
@@ -201,6 +210,7 @@ module.exports.createPost = async (req,res)=>{
   const product = new Product(req.body)
   await product.save()
   logAction('product', 'create', `Tạo sản phẩm: ${product.title}`, { productId: product.id, adminId: req.user.id })
+  await clearCategoryCache()
   res.json({
     code: 200,
     message: "Tạo mới sản phẩm thành công"
@@ -249,6 +259,7 @@ module.exports.editPatch = async (req,res) =>{
   }
     )
     logAction('product', 'update', `Cập nhật sản phẩm: ${id}`, { productId: id, adminId: req.user.id })
+    await clearCategoryCache()
     res.json({
       code: 200,
       message: "Cập nhật thành công sản phẩm"
@@ -301,6 +312,7 @@ module.exports.update = async (req,res)=>{
       }
   }
     )
+  await clearCategoryCache()
   res.json({
     code: 200,
     message: "Cập nhật vị trí thành công"

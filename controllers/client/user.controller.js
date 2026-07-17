@@ -1,6 +1,6 @@
 const User = require("../../models/user.model")
 const bcrypt = require("bcrypt")
-const ForgotPassword = require("../../models/forgot-password.model")
+const redis = require("../../config/redis")
 const generateHelper = require("../../helpers/generate")
 const sendMailHelper = require("../../helpers/sendMail")
 const Cart = require("../../models/cart.model")
@@ -199,15 +199,9 @@ module.exports.forgotPasswordPost = async (req, res) => {
   if (!user) {
     return res.status(400).json({ code: 400, message: "Email không tồn tại" })
   }
-  await ForgotPassword.deleteMany({ email })
   const otp = generateHelper.generateRandomNumber(6)
-  const objectForgotPassword = {
-    email: email,
-    otp: otp,
-    expiresAt: Date.now()
-  }
-  const forgotPassword = new ForgotPassword(objectForgotPassword)
-  await forgotPassword.save()
+  // Key: "otp:{email}", value: otp, TTL: 180 giây
+  await redis.set(`otp:${email}`, otp, 'EX', 180)
   const subject = `Mã OTP xác mình lấy lại mật khẩu`
   const html = `Mã OTP xác mình lấy lại mật khẩu là <b>${otp}</b>. Thời hạn sử dụng là 3 phút. Lưu ý không được để lộ mã OTP`
   sendMailHelper.sendMail(email, subject, html)
@@ -224,13 +218,11 @@ module.exports.otpPassword = async (req, res) => {
 module.exports.otpPasswordPost = async (req, res) => {
   const email = req.body.email
   const otp = req.body.otp
-  const result = await ForgotPassword.findOne({
-    email: email,
-    otp: otp
-  })
-  if (!result) {
-    return res.status(400).json({ code: 400, message: "OTP không đúng" })
+  const storedOtp = await redis.get(`otp:${email}`)
+  if (!storedOtp || storedOtp !== otp) {
+    return res.status(400).json({ code: 400, message: "OTP không đúng hoặc đã hết hạn" })
   }
+  await redis.del(`otp:${email}`) // Xoá sau khi xác thực thành công
   const user = await User.findOne({
     email: email,
     deleted: false

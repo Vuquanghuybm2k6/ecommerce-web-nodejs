@@ -4,7 +4,16 @@ const systemConfig = require("../../config/system")
 const createTreeHelper = require("../../helpers/createTree")
 const Account = require("../../models/account.model")
 const mongoose = require("mongoose")
+const redis = require("../../config/redis")
 const { logAction } = require("../../helpers/logger")
+
+const clearAllCache = async () => {
+  const keys = await redis.keys('products:category:*')
+  if (keys.length > 0) await redis.del(...keys)
+
+  const subKeys = await redis.keys('category:subs:*')
+  if (subKeys.length > 0) await redis.del(...subKeys)
+}
 
 // [GET]: /admin/products-category
 module.exports.index = async (req, res) => {
@@ -66,6 +75,7 @@ module.exports.createPost = async (req, res) => {
   const record = new ProductCategory(req.body)
   await record.save()
   logAction('category', 'create', `Tạo danh mục: ${record.title}`, { categoryId: record.id, adminId: req.user.id })
+  await clearAllCache()
   res.json({
     code: 200,
     message: "Tạo mới danh mục sản phẩm thành công"
@@ -111,6 +121,7 @@ module.exports.editPatch = async (req, res) => {
   const item = await ProductCategory.findOne({_id:id})
   await ProductCategory.updateOne({_id:id},req.body)
   logAction('category', 'update', `Cập nhật danh mục: ${item.title}`, { categoryId: id, adminId: req.user.id })
+  await clearAllCache()
   res.json({
     code: 200,
     message: `Cập nhật danh mục ${item.title} thành công`
@@ -167,6 +178,7 @@ module.exports.delete = async (req, res) => {
     }
     await ProductCategory.updateOne({_id: id}, {deleted: true})
     logAction('category', 'delete', `Xóa danh mục: ${id}`, { categoryId: id, adminId: req.user.id })
+    await clearAllCache()
     res.json({
       code: 200,
       message: "Xóa thành công danh mục sản phẩm"
