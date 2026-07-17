@@ -1,18 +1,21 @@
-const ProductCategory = require("../models/product-category.model")
-module.exports.getSubCategory = async (parentId) =>{
-  const getCategory = async(parentId)=>{
+const ProductCategory = require("../models/product-category.model");
+
+module.exports.getSubCategory = async (parentId) => {
+  const getCategory = async (parentId) => {
     const subs = await ProductCategory.find({
       parent_id: parentId,
       deleted: false,
-      status: "active"
+      status: "active",
     })
-    let allSub = [...subs]
-    for(const sub of subs){
-      const childs = await getCategory(sub._id)
-      allSub = allSub.concat(childs)
-    }
-    return allSub
-  }
-  const result = await getCategory(parentId)
-  return result
-}
+      .select("_id title slug parent_id")
+      .lean();
+
+    const childResults = await Promise.all(
+      subs.map((sub) => getCategory(sub._id))
+    );
+
+    return [...subs, ...childResults.flat()];
+  };
+
+  return await getCategory(parentId);
+};
