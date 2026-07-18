@@ -35,10 +35,18 @@ module.exports.order = async (req, res, next) => {
     if(!productInfo){
       return res.status(404).json({ code: 404, message: `Sản phẩm không tồn tại` })
     }
-    if(!productInfo.stock || productInfo.stock < req.miniCart.products[i].quantity){
+    const cartItem = req.miniCart.products[i]
+    let variant = null
+    if (cartItem.variantSku) {
+      variant = productInfo.variants.find(v => v.sku === cartItem.variantSku)
+    }
+    if (!variant && productInfo.variants?.length) {
+      variant = productInfo.variants[0]
+    }
+    if (variant && (!variant.stock || variant.stock < cartItem.quantity)) {
       return res.status(400).json({
         code: 400,
-        message: `Sản phẩm "${productInfo.title}" chỉ còn ${productInfo.stock || 0} sản phẩm trong kho`
+        message: `Phiên bản "${variant.label}" của sản phẩm "${productInfo.title}" chỉ còn ${variant.stock || 0} sản phẩm trong kho`
       })
     }
   }

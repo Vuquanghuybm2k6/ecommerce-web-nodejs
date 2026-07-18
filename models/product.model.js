@@ -3,15 +3,8 @@ const slug = require("mongoose-slug-updater")
 mongoose.plugin(slug)
 const productSchema = new mongoose.Schema({
   title: String,
-  product_category_id: {
-    type: String,
-    default: ""
-  },
+  product_category_id: { type: String, default: "" },
   description: String,
-  price: Number,
-  discountPercentage: Number,
-  stock: Number,
-  thumbnail: String,
   status: String,
   position: Number,
   featured: String,
@@ -43,14 +36,24 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  updatedBy : [ // trường updatedBy phải là một mảng bởi vì một bản ghi có thể sẽ được update nhiều lần
+  variants: [{
+    sku: { type: String, unique: true, default: "" },
+    label: { type: String, default: "" },
+    options: [{ key: String, value: String }],
+    price: { type: Number, default: 0 },
+    discountPercentage: { type: Number, default: 0 },
+    stock: { type: Number, default: 0 },
+    thumbnail: { type: String, default: "" },
+    status: { type: String, default: "active" }
+  }],
+  updatedBy : [
     {
       account_id: String,
       updatedAt: Date
     }
   ]
 }, {
-  timestamps: true // khi thêm trường này thì mongoose sẽ tự động thêm 2 trường createdAt và updatedAt
+  timestamps: true
 });
 const Product = mongoose.model('Product', productSchema, 'products')
 module.exports = Product

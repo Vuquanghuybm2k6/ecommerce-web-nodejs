@@ -8,10 +8,16 @@ const createTreeHelper = require("../../helpers/createTree")
 const Account = require("../../models/account.model")
 const redis = require("../../config/redis")
 const { logAction } = require("../../helpers/logger")
+const { uploadUrl } = require("../../middlewares/admin/uploadCoud")
+
+const CLOUDINARY_DOMAIN = 'cloudinary.com'
 
 const clearCategoryCache = async () => {
-  const keys = await redis.keys('products:category:*')
-  if (keys.length > 0) await redis.del(...keys)
+  try {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+    const keys = await Promise.race([redis.keys('products:category:*'), timeout])
+    if (keys.length > 0) await redis.del(...keys)
+  } catch {} // Redis unavailable → skip cache clear
 }
 
 // [GET]: /admin/products
@@ -194,9 +200,6 @@ module.exports.create = async (req,res)=>{
 
 // [POST]: /admin/products/create
 module.exports.createPost = async (req,res)=>{
-  req.body.price = parseInt(req.body.price)
-  req.body.discount = parseInt(req.body.discount)
-  req.body.stock = parseInt(req.body.stock)
   if(req.body.position){
     req.body.position = parseInt(req.body.position)
   }
@@ -204,8 +207,25 @@ module.exports.createPost = async (req,res)=>{
     const countProduct = await Product.countDocuments()
     req.body.position = countProduct+1 
   }
-  req.body.createdBy = { // gán thông tin dữ liệu người tạo sản phẩm trước khi lưu vào db
-    account_id : req.user.id // req.user lấy từ bên phía middleware khi đăng nhập
+  if (req.body.variants) {
+    req.body.variants = JSON.parse(req.body.variants)
+    let vi = 0
+    let variantThumbnails = req.body.variants.map((v) => { // tạo ra một mảng chứa thumbnail với từng biến thể
+      if (!v.thumbnail) {
+        return req.body.variantThumbnails?.[vi++] || ''
+      }
+      return v.thumbnail
+    })
+    variantThumbnails = await Promise.all(variantThumbnails.map(url =>
+      url && !url.includes(CLOUDINARY_DOMAIN) ? uploadUrl(url) : url
+    ))
+    req.body.variants = req.body.variants.map((v, idx) => ({
+      ...v,
+      thumbnail: variantThumbnails[idx] || '',
+    }))
+  }
+  req.body.createdBy = {
+    account_id : req.user.id
   }
   const product = new Product(req.body)
   await product.save()
@@ -221,6 +241,23 @@ module.exports.createPost = async (req,res)=>{
 module.exports.edit = async (req,res)=>{
   const id = req.params.id
   const product = await Product.findOne({_id: id})
+  // Tự động upload ảnh biến thể từ URL ngoài lên Cloudinary
+  if (product?.variants?.length) {
+    let changed = false
+    product.variants = await Promise.all(product.variants.map(async v => {
+      if (v.thumbnail && !v.thumbnail.includes(CLOUDINARY_DOMAIN)) {
+        const newUrl = await uploadUrl(v.thumbnail)
+        if (newUrl !== v.thumbnail) {
+          changed = true
+          return { ...v, thumbnail: newUrl }
+        }
+      }
+      return v
+    }))
+    if (changed) {
+      await Product.updateOne({ _id: id }, { $set: { variants: product.variants } })
+    }
+  }
   const category = await ProductCategory.find({deleted:false})
   const newCategory = createTreeHelper.tree(category)
   res.json({
@@ -236,14 +273,25 @@ module.exports.edit = async (req,res)=>{
 // [PATCH]: /admin/products/edit
 module.exports.editPatch = async (req,res) =>{
   const id =req.params.id
-  req.body.price = parseInt(req.body.price)
-  req.body.discountPercentage = parseInt(req.body.discountPercentage)
-  req.body.stock = parseInt(req.body.stock)
   req.body.position = parseInt(req.body.position)
-  if(req.file){
-    req.body.thumbnail = `/uploads/${req.file.filename}`
-  }
   try{
+    if (req.body.variants) {
+      req.body.variants = JSON.parse(req.body.variants)
+      let vi = 0
+      let variantThumbnails = req.body.variants.map((v) => {
+        if (!v.thumbnail) {
+          return req.body.variantThumbnails?.[vi++] || ''
+        }
+        return v.thumbnail
+      })
+      variantThumbnails = await Promise.all(variantThumbnails.map(async url =>
+        url && !url.includes(CLOUDINARY_DOMAIN) ? await uploadUrl(url) : url
+      ))
+      req.body.variants = req.body.variants.map((v, idx) => ({
+        ...v,
+        thumbnail: variantThumbnails[idx] || '',
+      }))
+    }
     const updatedBy = {
     account_id: req.user.id,
     updatedAt: new Date()
@@ -252,8 +300,8 @@ module.exports.editPatch = async (req,res) =>{
       {
         _id:id
       },{
-      $set: req.body, // $set: gán, cập nhật giá trị cho field
-      $push: { // $push: thêm phần tử vào mảng, ko ghi đè giá trị cũ
+      $set: req.body,
+      $push: {
         updatedBy : updatedBy
       }
   }

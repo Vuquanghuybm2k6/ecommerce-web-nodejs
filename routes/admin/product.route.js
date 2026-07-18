@@ -12,13 +12,13 @@ router.patch("/delete/:id", controller.delete)
 router.get("/create", controller.create)
 router.post(
   "/create",
-  upload.single("thumbnail"),
+  upload.fields([{ name: 'variantThumbnail', maxCount: 50 }]),
   uploadCloud.upload,
   validate.createPost,
   controller.createPost)
 router.get("/edit/:id", controller.edit)
 router.patch("/edit/:id",
-  upload.single("thumbnail"),
+  upload.fields([{ name: 'variantThumbnail', maxCount: 50 }]),
   uploadCloud.upload,
   validate.editPatch,
   controller.editPatch)

@@ -13,7 +13,10 @@ const orderSchema = new mongoose.Schema({
       price: Number,
       discountPercentage: Number,
       priceNew: Number,
-      quantity: Number
+      quantity: Number,
+      variantSku: { type: String, default: "" },
+      variantLabel: { type: String, default: "" },
+      variantOptions: [{ key: String, value: String }]
     }
   ],
   status: {
@@ -41,7 +44,16 @@ const orderSchema = new mongoose.Schema({
     paymentStatus: String // 'success' or 'failed'
   },
   shippingMethod: String,
-  
+  products: [{
+    product_id: String,
+    price: Number,
+    discountPercentage: Number,
+    priceNew: Number,
+    quantity: Number,
+    variantSku: { type: String, default: "" },
+    variantLabel: { type: String, default: "" },
+    variantOptions: [{ key: String, value: String }]
+  }],
   deleted: {
     type: Boolean,
     default: false

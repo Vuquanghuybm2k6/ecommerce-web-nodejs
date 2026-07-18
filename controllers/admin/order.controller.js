@@ -116,14 +116,21 @@ module.exports.changeStatus = async (req, res) => {
         if (!productDoc) {
           throw new Error(`Không tìm thấy sản phẩm ${product.product_id}`)
         }
-        if (productDoc.stock < product.quantity) {
-          throw new Error(`Sản phẩm "${productDoc.title}" không đủ hàng (còn ${productDoc.stock}, cần ${product.quantity})`)
+        // trừ tồn kho của đúng biến thể đang đặt hàng
+        const matchSku = product.variantSku || ""
+        let variantIndex = productDoc.variants.findIndex(v => v.sku === matchSku)
+        if (variantIndex === -1) variantIndex = 0
+        const targetVariant = productDoc.variants[variantIndex]
+        if (targetVariant) {
+          if (targetVariant.stock < product.quantity) {
+            throw new Error(`Sản phẩm "${productDoc.title}" (${targetVariant.label}) không đủ hàng (còn ${targetVariant.stock}, cần ${product.quantity})`)
+          }
+          await Product.updateOne(
+            { _id: product.product_id },
+            { $inc: { [`variants.${variantIndex}.stock`]: -product.quantity } },
+            { session }
+          )
         }
-        await Product.updateOne(
-          { _id: product.product_id },
-          { $inc: { stock: -product.quantity } },
-          { session }
-        )
       }
       await Order.updateOne(
         { _id: id },
@@ -146,13 +153,20 @@ module.exports.changeStatus = async (req, res) => {
     session.startTransaction()
     try {
       for (const product of order.products) {
-        const result = await Product.updateOne(
-          { _id: product.product_id },
-          { $inc: { stock: product.quantity } },
-          { session }
-        )
-        if (result.matchedCount === 0) {
+        const productDoc = await Product.findOne({ _id: product.product_id }).session(session)
+        if (!productDoc) {
           throw new Error(`Không tìm thấy sản phẩm ${product.product_id}`)
+        }
+        // hoàn tôn kho của đúng biến thể đang đặt hàng
+        const matchSku = product.variantSku || ""
+        let variantIndex = productDoc.variants.findIndex(v => v.sku === matchSku)
+        if (variantIndex === -1) variantIndex = 0
+        if (productDoc.variants[variantIndex]) {
+          await Product.updateOne(
+            { _id: product.product_id },
+            { $inc: { [`variants.${variantIndex}.stock`]: product.quantity } },
+            { session }
+          )
         }
       }
       await Order.updateOne(

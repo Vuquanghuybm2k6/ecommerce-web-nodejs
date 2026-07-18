@@ -9,35 +9,38 @@ cloudinary.config({
 });
 // End Cloudinary
 
-module.exports.upload = (req, res, next) =>{
-  if (req.file) { 
-    let streamUpload = (req) => {
-      return new Promise((resolve, reject) => {
-        let stream = cloudinary.uploader.upload_stream(
-          (error, result) => {
-            if (result) {
-              resolve(result);
-            } else {
-              reject(error);
-            }
-          }
-        );
+function uploadFile(file) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      (error, result) => {
+        if (result) resolve(result.secure_url)
+        else reject(error)
+      }
+    )
+    streamifier.createReadStream(file.buffer).pipe(stream)
+  })
+}
 
-        streamifier.createReadStream(req.file.buffer).pipe(stream);
-      });
-    };
+module.exports.upload = async (req, res, next) => {
+  try {
+    const variantFiles = req.files?.variantThumbnail || []
 
-    async function upload(req) {
- 
-      let result = await streamUpload(req);
-      console.log(result.secure_url);
-      console.log(req.file)
-      req.body[req.file.fieldname] = result.secure_url 
-      next();
+    if (variantFiles.length > 0) {
+      req.body.variantThumbnails = await Promise.all(variantFiles.map(uploadFile))
     }
-    upload(req); 
-  } else {
-    next(); 
+
+    next()
+  } catch {
+    res.status(500).json({ code: 500, message: "Upload ảnh thất bại" })
+  }
+}
+
+module.exports.uploadUrl = async (url) => {
+  try {
+    const result = await cloudinary.uploader.upload(url)
+    return result.secure_url
+  } catch {
+    return url // fallback giữ nguyên URL gốc nếu upload thất bại
   }
 }
 

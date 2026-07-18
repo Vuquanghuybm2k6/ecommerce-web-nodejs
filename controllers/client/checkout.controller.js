@@ -38,15 +38,25 @@ module.exports.order = async (req,res)=>{
   let totalPrice = 0
   cart.products.forEach((product, index) => {
     const productInfo = productInfos[index]
-    const priceNew = productHelper.priceNewProduct(productInfo)
+    let variant = null
+    if (product.variantSku && productInfo) {
+      variant = productInfo.variants.find(v => v.sku === product.variantSku)
+    }
+    const itemPrice = variant?.price || 0
+    const discountPercentage = variant?.discountPercentage || 0
+    const itemPriceNew = Number((itemPrice - itemPrice * discountPercentage / 100).toFixed(0))
+
     products.push({
       product_id: product.product_id,
       quantity: product.quantity,
-      discountPercentage: productInfo.discountPercentage,
-      price: productInfo.price,
-      priceNew: priceNew
+      discountPercentage,
+      price: itemPrice,
+      priceNew: itemPriceNew,
+      variantSku: product.variantSku || "",
+      variantLabel: product.variantLabel || "",
+      variantOptions: product.variantOptions || []
     })
-    totalPrice += priceNew * product.quantity
+    totalPrice += itemPriceNew * product.quantity
   })
 
   const orderCode = "DH" + Date.now().toString().slice(-8) // tạo mã đơn hàng
@@ -104,12 +114,13 @@ module.exports.success = async (req,res)=>{
   const orderId =req.params.orderId
   const order = await Order.findOne({_id: orderId}).lean()
   const productInfos = await Promise.all(
-    order.products.map(product => Product.findOne({_id: product.product_id}).select("title thumbnail"))
+    order.products.map(product => Product.findOne({_id: product.product_id}).select("title variants"))
   )
   order.products.forEach((product, index) => {
-    product.productInfo = productInfos[index]
-    product.priceNew = productHelper.priceNewProduct(product)
-    product.totalPrice = product.priceNew * product.quantity
+    const productInfo = productInfos[index]
+    const thumbnail = productInfo?.variants?.[0]?.thumbnail || ''
+    product.productInfo = productInfo ? { ...productInfo, thumbnail } : null
+    product.totalPrice = (product.priceNew || 0) * product.quantity
   })
   order.totalPrice = order.products.reduce((sum,item)=>sum+item.totalPrice,0)
   res.json({

@@ -1,5 +1,24 @@
 const Product = require("../../models/product.model")
 
+const checkStock = (product, variantSku, quantity) => {
+  let variant = null
+  if (variantSku) {
+    variant = product.variants.find(v => v.sku === variantSku)
+    if (!variant || variant.status !== 'active') {
+      return { ok: false, message: "Phiên bản sản phẩm không tồn tại" }
+    }
+  } else if (product.variants?.length) {
+    return { ok: false, message: "Vui lòng chọn biến thể sản phẩm" }
+  }
+  if (variant) {
+    if (!variant.stock || variant.stock < quantity) {
+      return { ok: false, message: `Phiên bản "${variant.label}" chỉ còn ${variant.stock || 0} sản phẩm trong kho` }
+    }
+    return { ok: true, variant }
+  }
+  return { ok: true }
+}
+
 module.exports.addPost = async (req, res, next) => {
   const quantity = parseInt(req.body.quantity)
   if(!quantity || quantity <= 0){
@@ -9,15 +28,9 @@ module.exports.addPost = async (req, res, next) => {
   if(!product){
     return res.status(404).json({ code: 404, message: "Sản phẩm không tồn tại" })
   }
-  const exitProductInCart = req.miniCart.products.find(item => item.product_id == req.params.productId)
-  const currentQuantity = exitProductInCart ? exitProductInCart.quantity : 0
-  const totalQuantity = currentQuantity + quantity
-  if(!product.stock || product.stock < totalQuantity){
-    return res.status(400).json({
-      code: 400,
-      message: `Sản phẩm "${product.title}" chỉ còn ${product.stock || 0} sản phẩm trong kho`
-    })
-  }
+  const variantSku = req.body.variantSku || ""
+  const { ok, message } = checkStock(product, variantSku, quantity)
+  if (!ok) return res.status(400).json({ code: 400, message })
   next()
 }
 
@@ -30,11 +43,8 @@ module.exports.update = async (req, res, next) => {
   if(!product){
     return res.status(404).json({ code: 404, message: "Sản phẩm không tồn tại" })
   }
-  if(!product.stock || product.stock < quantity){
-    return res.status(400).json({
-      code: 400,
-      message: `Sản phẩm "${product.title}" chỉ còn ${product.stock || 0} sản phẩm trong kho`
-    })
-  }
+  const variantSku = req.body.variantSku || ""
+  const { ok, message } = checkStock(product, variantSku, quantity)
+  if (!ok) return res.status(400).json({ code: 400, message })
   next()
 }

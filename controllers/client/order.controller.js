@@ -10,13 +10,14 @@ const enrichOrder = async (order) => {
   if (!order) return null
 
   const productInfos = await Promise.all(
-    order.products.map(product => Product.findOne({ _id: product.product_id }).select("title thumbnail").lean())
+    order.products.map(product => Product.findOne({ _id: product.product_id }).select("title variants").lean())
   )
 
   order.products.forEach((product, index) => {
-    product.productInfo = productInfos[index]
-    product.priceNew = productHelper.priceNewProduct(product)
-    product.totalPrice = product.priceNew * product.quantity
+    const productInfo = productInfos[index]
+    const thumbnail = productInfo?.variants?.[0]?.thumbnail || ''
+    product.productInfo = productInfo ? { ...productInfo, thumbnail } : null
+    product.totalPrice = (product.priceNew || 0) * product.quantity
   })
 
   order.totalPrice = order.products.reduce((sum, item) => sum + item.totalPrice, 0)
