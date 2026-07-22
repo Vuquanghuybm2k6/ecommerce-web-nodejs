@@ -28,8 +28,12 @@ module.exports.registerPost = async (req, res) => {
   await user.save()
   const tokens = await createTokenPair(user, req)
 
-  const guestCartId = req.cartId
-  let cart = guestCartId ? await Cart.findById(guestCartId) : null
+  let rawCartId = req.cartId
+  const headerCartId = req.headers['x-cart-id']
+  if (headerCartId && headerCartId !== rawCartId?.toString()) {
+    rawCartId = headerCartId
+  }
+  let cart = rawCartId ? await Cart.findById(rawCartId) : null
 
   if (cart) {
     cart.user_id = user.id
@@ -38,6 +42,12 @@ module.exports.registerPost = async (req, res) => {
     cart = new Cart({ products: [], user_id: user.id })
     await cart.save()
   }
+
+  // Cleanup duplicate carts for this user
+  await Cart.deleteMany({
+    user_id: user.id,
+    _id: { $ne: cart._id }
+  })
 
   logAction('auth', 'register', `User registered: ${user.email}`, { userId: user.id, email: user.email })
 
@@ -84,10 +94,16 @@ module.exports.loginPost = async (req, res) => {
 
   const tokens = await createTokenPair(user, req)
 
-  const guestCartId = req.cartId
+  let guestCartId = req.cartId
+  const rawHeaderCartId = req.headers['x-cart-id']
+
+  if (rawHeaderCartId && rawHeaderCartId !== guestCartId?.toString()) {
+    guestCartId = rawHeaderCartId
+  }
+
   const [guestCart, userCart] = await Promise.all([
     guestCartId ? Cart.findById(guestCartId) : null,
-    Cart.findOne({ user_id: user.id })
+    Cart.findOne({ user_id: user.id }).sort({ createdAt: -1 })
   ])
 
   let finalCart = userCart
@@ -95,7 +111,10 @@ module.exports.loginPost = async (req, res) => {
   if (guestCart && userCart) {
     if (guestCart._id.toString() !== userCart._id.toString()) {
       for (const item of guestCart.products) {
-        const existing = userCart.products.find(p => p.product_id === item.product_id)
+        const existing = userCart.products.find(p =>
+          p.product_id.toString() === item.product_id.toString()
+          && (p.variantSku || '') === (item.variantSku || '')
+        )
         if (existing) {
           existing.quantity += item.quantity
         } else {
@@ -113,6 +132,12 @@ module.exports.loginPost = async (req, res) => {
     finalCart = new Cart({ products: [], user_id: user.id })
     await finalCart.save()
   }
+
+  // Cleanup duplicate carts for this user
+  await Cart.deleteMany({
+    user_id: user.id,
+    _id: { $ne: finalCart._id }
+  })
 
   logAction('auth', 'login_success', `User logged in: ${email}`, { userId: user.id, email })
   res.json({

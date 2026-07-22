@@ -1,5 +1,5 @@
-const crypto = require("crypto") // thư viện giúp mã hóa dữ liệu
-const qs = require("qs") // thư viện giúp chuyển đổi object sang query string
+const crypto = require("crypto")
+const qs = require("qs")
 
 function sortObject(obj) {
   const sorted = {}
@@ -16,7 +16,14 @@ function getIpAddr(req) {
     || '127.0.0.1'
 }
 
-module.exports.createPaymentUrl = (order, req) => { // tạo url thanh toán vnpay
+function hashString(data, secret) {
+  return crypto
+    .createHmac('sha512', secret)
+    .update(Buffer.from(data, 'utf-8'))
+    .digest('hex')
+}
+
+module.exports.createPaymentUrl = (order, req) => {
   const pad = (n) => n.toString().padStart(2, '0')
 
   const date = new Date()
@@ -29,17 +36,19 @@ module.exports.createPaymentUrl = (order, req) => { // tạo url thanh toán vnp
     `${expire.getFullYear()}${pad(expire.getMonth() + 1)}${pad(expire.getDate())}` +
     `${pad(expire.getHours())}${pad(expire.getMinutes())}${pad(expire.getSeconds())}`
 
+  const hashSecret = (process.env.VNP_HASH_SECRET || '').trim()
+
   const vnpParams = {
     vnp_Version: '2.1.0',
     vnp_Command: 'pay',
-    vnp_TmnCode: process.env.VNP_TMN_CODE,
+    vnp_TmnCode: (process.env.VNP_TMN_CODE || '').trim(),
     vnp_Locale: 'vn',
     vnp_CurrCode: 'VND',
     vnp_TxnRef: order.orderCode,
-    vnp_OrderInfo: `Thanh toan don hang ${order.orderCode}`,
+    vnp_OrderInfo: `Thanh_toan_DH${order.orderCode}`,
     vnp_OrderType: 'other',
-    vnp_Amount: order.totalPrice * 100,
-    vnp_ReturnUrl: process.env.VNP_RETURN_URL,
+    vnp_Amount: String(order.totalPrice * 100),
+    vnp_ReturnUrl: (process.env.VNP_RETURN_URL || '').trim(),
     vnp_IpAddr: getIpAddr(req),
     vnp_CreateDate: createDate,
     vnp_ExpireDate: expireDate,
@@ -49,11 +58,12 @@ module.exports.createPaymentUrl = (order, req) => { // tạo url thanh toán vnp
   const signData = Object.entries(sorted)
     .map(([k, v]) => `${k}=${v}`)
     .join('&')
-  const hmac = crypto.createHmac('sha512', process.env.VNP_HASH_SECRET)
-  const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex')
+  const signed = hashString(signData, hashSecret)
   sorted.vnp_SecureHash = signed
 
-  return `${process.env.VNP_URL}?${qs.stringify(sorted, { encode: false })}`
+  const paymentUrl = `${process.env.VNP_URL}?${qs.stringify(sorted)}`
+
+  return paymentUrl
 }
 
 module.exports.verifyReturn = (query) => {
@@ -66,11 +76,13 @@ module.exports.verifyReturn = (query) => {
   const signData = Object.entries(sorted)
     .map(([k, v]) => `${k}=${v}`)
     .join('&')
-  const hmac = crypto.createHmac('sha512', process.env.VNP_HASH_SECRET)
-  const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex')
+
+  const hashSecret = (process.env.VNP_HASH_SECRET || '').trim()
+  const signed = hashString(signData, hashSecret)
+  const isValid = secureHash === signed
 
   return {
-    isValid: secureHash === signed,
+    isValid,
     responseCode: query.vnp_ResponseCode,
     transactionNo: query.vnp_TransactionNo,
     bankCode: query.vnp_BankCode,

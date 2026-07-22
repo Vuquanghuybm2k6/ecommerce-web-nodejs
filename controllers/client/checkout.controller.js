@@ -139,6 +139,14 @@ module.exports.vnpayReturn = async (req, res) => {
     return res.redirect(`${process.env.VNP_FRONTEND_RETURN_URL}?success=false&message=Order not found`)
   }
 
+  if (!result.isValid) {
+    logger.warn('VNPay signature verification failed', {
+      orderCode: result.txnRef,
+      responseCode: result.responseCode,
+      transactionNo: result.transactionNo,
+    })
+  }
+
   const paymentInfo = {
     transactionId: result.transactionNo,
     bankCode: result.bankCode,
@@ -168,6 +176,7 @@ module.exports.vnpayReturn = async (req, res) => {
     transactionId: paymentInfo.transactionId,
     bankCode: paymentInfo.bankCode,
     responseCode: result.responseCode,
+    signatureValid: result.isValid,
   })
 
   res.redirect(frontendUrl.toString())

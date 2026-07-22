@@ -25,7 +25,8 @@ module.exports.googleAuth = (req, res, next) => {
 module.exports.googleCallback = (req, res, next) => {
   passport.authenticate("google", { session: false }, async (err, user) => {
     if (err || !user) {
-      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/user/login?error=auth_failed`)
+      const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
+      return res.redirect(`${baseUrl}/user/login?error=auth_failed`)
     }
 
     const tokens = await clientAuthHelper.createTokenPair(user, req)
@@ -41,7 +42,10 @@ module.exports.googleCallback = (req, res, next) => {
     if (guestCart && userCart) {
       if (guestCart._id.toString() !== userCart._id.toString()) {
         for (const item of guestCart.products) {
-          const existing = userCart.products.find(p => p.product_id === item.product_id)
+          const existing = userCart.products.find(p =>
+            p.product_id.toString() === item.product_id.toString()
+            && (p.variantSku || '') === (item.variantSku || '')
+          )
           if (existing) {
             existing.quantity += item.quantity
           } else {
@@ -65,11 +69,12 @@ module.exports.googleCallback = (req, res, next) => {
     oauthCodeStore.set(code, {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      expiresAt: Date.now() + 60000
+      expiresAt: Date.now() + 300000
     })
 
     res.clearCookie('guestCartId')
-    const url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/user/login?code=${code}&cartId=${finalCart._id}`
+    const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
+    const url = `${baseUrl}/user/login?code=${code}&cartId=${finalCart._id}`
     res.redirect(url)
   })(req, res, next)
 }
@@ -81,7 +86,6 @@ module.exports.exchangeOAuthCode = async (req, res) => {
     oauthCodeStore.delete(code)
     return res.status(400).json({ code: 400, message: 'Code không hợp lệ hoặc đã hết hạn' })
   }
-  oauthCodeStore.delete(code)
   res.json({
     code: 200,
     message: 'Thành công',

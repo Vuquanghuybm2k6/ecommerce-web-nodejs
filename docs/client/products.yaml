@@ -4,10 +4,10 @@
       - Client - Products
     summary: List active products
     description: Get active products with pagination and optional keyword search
-    security: []
+    security: [] # nghĩa là api này không cần đăng nhập, ai cũng có thể truy cập được
     parameters:
       - name: keyword
-        in: query
+        in: query # in: `query` nghĩa là tham số này sẽ được truyền trong query string của URL, ví dụ: `/api/products?keyword=phone`
         schema:
           type: string
         description: Search keyword for product title

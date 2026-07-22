@@ -6,30 +6,47 @@ module.exports.cartId = async (req, res, next) => {
   let userCart = null
 
   if (req.user && req.user.id) {
-    userCart = await Cart.findOne({ user_id: req.user.id })
+    userCart = await Cart.findOne({ user_id: req.user.id }).sort({ createdAt: -1 })
   }
 
   if (cartId) {
     cart = await Cart.findById(cartId)
   }
 
-  if (!cart) {
-    cart = userCart
-  }
-
-  if (cart && userCart && cart._id.toString() !== userCart._id.toString()) {
-    for (const product of cart.products) {
-      const existing = userCart.products.find(
-        p => p.product_id.toString() === product.product_id.toString()
-      )
-      if (existing) {
-        existing.quantity += product.quantity
-      } else {
-        userCart.products.push({ product_id: product.product_id, quantity: product.quantity })
+  if (req.user && req.user.id) {
+    if (userCart) {
+      if (cart && cart._id.toString() !== userCart._id.toString()) {
+        for (const product of cart.products) {
+          const existing = userCart.products.find(
+            p => p.product_id.toString() === product.product_id.toString()
+              && (p.variantSku || '') === (product.variantSku || '')
+          )
+          if (existing) {
+            existing.quantity += product.quantity
+          } else {
+            userCart.products.push({
+              product_id: product.product_id,
+              quantity: product.quantity,
+              variantSku: product.variantSku || '',
+              variantLabel: product.variantLabel || '',
+              variantOptions: product.variantOptions || [],
+              thumbnail: product.thumbnail || '',
+            })
+          }
+        }
+        await Cart.deleteOne({ _id: cart._id })
+        await userCart.save()
+        await Cart.deleteMany({
+          user_id: req.user.id,
+          _id: { $ne: userCart._id }
+        })
       }
+      cart = userCart
+    } else if (cart) {
+      cart.user_id = req.user.id
+      await cart.save()
     }
-    await Cart.deleteOne({ _id: cart._id })
-    await userCart.save()
+  } else if (!cart && userCart) {
     cart = userCart
   }
 
@@ -48,5 +65,6 @@ module.exports.cartId = async (req, res, next) => {
 
   req.cartId = cart._id
   req.miniCart = cart
+  res.cookie('cartId', cart._id.toString(), { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: false, path: '/' })
   next()
 }

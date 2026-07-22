@@ -1,5 +1,5 @@
-components:
-  securitySchemes:
+components: # khai báo các thành phần dùng chung trong api
+  securitySchemes: # khai báo cách xác thực api
     BearerAuth:
       type: http
       scheme: bearer
@@ -11,10 +11,10 @@ components:
       name: x-cart-id
       description: Cart ID for guest user cart management
 
-  schemas:
+  schemas: # nơi định nghĩa các model dữ liệu dùng chung trong api
     ApiResponse:
       type: object
-      properties:
+      properties: # định nghĩa cấu trúc response chung
         code:
           type: number
         message:
