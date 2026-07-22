@@ -1,0 +1,27 @@
+services:
+  backend:
+    build: .
+    container_name: pmp-backend
+    ports:
+      - "3000:3000" 
+      # có dạng HOST:CONTAINER
+    env_file:
+      - .env
+    volumes: 
+    # dùng để chia sẻ hoặc lưu trữ dữ liệu giữa máy thật (host) và container, hoặc lưu dữ liệu lâu dài để không bị mất khi container bị xóa.
+      - .:/app 
+      # lấy thư mục backend trên máy của mình và gắn vao thư mục /app trong container, khi sửa code trên máy thì container cũng sẽ nhận được thay đổi
+      - /app/node_modules
+    depends_on:
+      - redis 
+      # redis phải chạy trước backend, nếu không backend sẽ không kết nối được với redis
+  redis:
+    image: redis:7-alpine
+    container_name: pmp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+volumes:
+  redis_data:
