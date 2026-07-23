@@ -12,7 +12,15 @@ const morganStream = { write: (message) => logger.info(message.trim(), { categor
 
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
+    const normalizedOrigin = origin.replace(/\/$/, '')
+    const allowedOrigin = (process.env.FRONTEND_URL || '').replace(/\/$/, '')
+    if (normalizedOrigin === allowedOrigin || normalizedOrigin.endsWith('.vercel.app')) {
+      return callback(null, true)
+    }
+    callback(null, false)
+  },
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
   credentials: true
 }))
