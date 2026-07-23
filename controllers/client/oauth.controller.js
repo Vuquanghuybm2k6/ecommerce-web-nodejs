@@ -17,6 +17,10 @@ module.exports.googleAuth = (req, res, next) => {
   if (cartId) {
     res.cookie('guestCartId', cartId, { maxAge: 600000, httpOnly: true, sameSite: 'lax' })
   }
+  const oauthOrigin = req.query.origin
+  if (oauthOrigin) {
+    res.cookie('oauthOrigin', oauthOrigin, { maxAge: 600000, httpOnly: true, sameSite: 'lax' })
+  }
   passport.authenticate("google", {
     scope: ["profile", "email"]
   })(req, res, next)
@@ -25,7 +29,8 @@ module.exports.googleAuth = (req, res, next) => {
 module.exports.googleCallback = (req, res, next) => {
   passport.authenticate("google", { session: false }, async (err, user) => {
     if (err || !user) {
-      const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
+      const baseUrl = (req.cookies?.oauthOrigin || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
+      res.clearCookie('oauthOrigin')
       return res.redirect(`${baseUrl}/user/login?error=auth_failed`)
     }
 
@@ -73,7 +78,8 @@ module.exports.googleCallback = (req, res, next) => {
     })
 
     res.clearCookie('guestCartId')
-    const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
+    res.clearCookie('oauthOrigin')
+    const baseUrl = (req.cookies?.oauthOrigin || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
     const url = `${baseUrl}/user/login?code=${code}&cartId=${finalCart._id}`
     res.redirect(url)
   })(req, res, next)
