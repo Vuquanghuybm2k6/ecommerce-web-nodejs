@@ -27,7 +27,7 @@ module.exports.googleAuth = (req, res, next) => {
 }
 
 module.exports.googleCallback = (req, res, next) => {
-  passport.authenticate("google", { session: false }, async (err, user) => {
+  passport.authenticate("google", { session: false }, async (err, user) => { // xác thực người dùng 
     if (err || !user) {
       const baseUrl = (req.cookies?.oauthOrigin || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
       res.clearCookie('oauthOrigin')
@@ -36,8 +36,8 @@ module.exports.googleCallback = (req, res, next) => {
 
     const tokens = await clientAuthHelper.createTokenPair(user, req, res)
 
-    const guestCartId = req.cookies?.guestCartId
-    const [guestCart, userCart] = await Promise.all([
+    const guestCartId = req.cookies?.guestCartId // đây là cart đã được lưu vào cookie trước khi redirect sang google
+    const [guestCart, userCart] = await Promise.all([ // lấy ra thông tin của hai cart khách và người dùng
       guestCartId ? Cart.findById(guestCartId) : null,
       Cart.findOne({ user_id: user.id })
     ])
@@ -45,7 +45,7 @@ module.exports.googleCallback = (req, res, next) => {
     let finalCart = userCart
 
     if (guestCart && userCart) {
-      if (guestCart._id.toString() !== userCart._id.toString()) {
+      if (guestCart._id.toString() !== userCart._id.toString()) { // merge hai cart với nhau và xóa guest cart khỏi db
         for (const item of guestCart.products) {
           const existing = userCart.products.find(p =>
             p.product_id.toString() === item.product_id.toString()
@@ -71,7 +71,7 @@ module.exports.googleCallback = (req, res, next) => {
     }
 
     const code = crypto.randomBytes(16).toString('hex')
-    oauthCodeStore.set(code, {
+    oauthCodeStore.set(code, { // lưu access token và oauthCodeStore
       accessToken: tokens.accessToken,
       expiresAt: Date.now() + 300000
     })

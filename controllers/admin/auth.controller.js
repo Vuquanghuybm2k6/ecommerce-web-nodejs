@@ -127,7 +127,7 @@ module.exports.logout = async (req, res) => {
       revokedAt: new Date()
     })
   }
-  res.clearCookie('adminRefreshToken', { path: '/api/admin' })
+  res.clearCookie('adminRefreshToken', { path: '/api/admin', secure: true, sameSite: 'none' })
   logAction('auth', 'admin_logout', 'Admin logged out', { accountId: req.user?.id })
   res.json({
     code: 200,

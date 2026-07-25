@@ -202,7 +202,7 @@ module.exports.logout = async (req, res) => {
     })
   }
 
-  res.clearCookie('refreshToken', { path: '/api' })
+  res.clearCookie('refreshToken', { path: '/api', secure: true, sameSite: 'none' })
   logAction('auth', 'logout', `User logged out`, { userId: req.user?.id })
   res.json({ code: 200, message: "Đăng xuất thành công" })
 }
