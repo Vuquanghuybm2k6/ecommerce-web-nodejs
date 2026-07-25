@@ -2,7 +2,7 @@ const Account = require("../models/account.model")
 const AdminRefreshToken = require("../models/admin-refresh-token.model")
 const jwtHelper = require("./jwt.helper")
 
-module.exports.createTokenPair = async (account, req) => {
+module.exports.createTokenPair = async (account, req, res) => {
   const payload = {
     id: account._id,
     email: account.email
@@ -30,7 +30,15 @@ module.exports.createTokenPair = async (account, req) => {
 
   await refreshTokenModel.save()
 
-  return { accessToken, refreshToken }
+  res.cookie('adminRefreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/api/admin',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  })
+
+  return { accessToken }
 }
 
 module.exports.setAuthCookies = (res, tokens) => {

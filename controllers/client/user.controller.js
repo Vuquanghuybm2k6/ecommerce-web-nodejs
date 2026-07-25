@@ -26,7 +26,7 @@ module.exports.registerPost = async (req, res) => {
   req.body.password = bcrypt.hashSync(req.body.password, 10)
   const user = new User(req.body)
   await user.save()
-  const tokens = await createTokenPair(user, req)
+  const tokens = await createTokenPair(user, req, res)
 
   let rawCartId = req.cartId
   const headerCartId = req.headers['x-cart-id']
@@ -57,8 +57,7 @@ module.exports.registerPost = async (req, res) => {
     data: {
       user: { id: user.id, email: user.email },
       cartId: cart.id,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken
+      accessToken: tokens.accessToken
     }
   })
 }
@@ -92,7 +91,7 @@ module.exports.loginPost = async (req, res) => {
     return res.status(401).json({ code: 401, message: "Sai mật khẩu" })
   }
 
-  const tokens = await createTokenPair(user, req)
+  const tokens = await createTokenPair(user, req, res)
 
   let guestCartId = req.cartId
   const rawHeaderCartId = req.headers['x-cart-id']
@@ -146,15 +145,14 @@ module.exports.loginPost = async (req, res) => {
     data: {
       user: { id: user.id, email: user.email },
       cartId: finalCart._id,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken
+      accessToken: tokens.accessToken
     }
   })
 }
 
 // [POST]: /user/refresh-token
 module.exports.refreshToken = async (req, res) => {
-  const refreshToken = req.body.refreshToken
+  const refreshToken = req.cookies.refreshToken
   if (!refreshToken) {
     return res.status(401).json({ code: 401, message: "Refresh token không tồn tại" })
   }
@@ -178,14 +176,13 @@ module.exports.refreshToken = async (req, res) => {
       revokedAt: Date.now()
     })
 
-    const tokens = await createTokenPair(user, req)
+    const tokens = await createTokenPair(user, req, res)
     logAction('auth', 'refresh_success', `Token refreshed for user ${user.email}`, { userId: user.id, email: user.email })
     return res.json({
       code: 200,
       message: "Refresh token thành công",
       data: {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken
+        accessToken: tokens.accessToken
       }
     })
   } catch (error) {
@@ -196,7 +193,7 @@ module.exports.refreshToken = async (req, res) => {
 
 // [POST]: /user/logout
 module.exports.logout = async (req, res) => {
-  const refreshToken = req.body.refreshToken
+  const refreshToken = req.cookies.refreshToken
 
   if (refreshToken) {
     await RefreshToken.updateOne({ token: refreshToken }, {
@@ -205,6 +202,7 @@ module.exports.logout = async (req, res) => {
     })
   }
 
+  res.clearCookie('refreshToken', { path: '/api' })
   logAction('auth', 'logout', `User logged out`, { userId: req.user?.id })
   res.json({ code: 200, message: "Đăng xuất thành công" })
 }
@@ -252,13 +250,12 @@ module.exports.otpPasswordPost = async (req, res) => {
     email: email,
     deleted: false
   })
-  const tokens = await createTokenPair(user, req)
+  const tokens = await createTokenPair(user, req, res)
   res.json({
     code: 200,
     message: "Xác thực OTP thành công",
     data: {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken
+      accessToken: tokens.accessToken
     }
   })
 }

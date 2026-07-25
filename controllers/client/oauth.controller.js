@@ -34,7 +34,7 @@ module.exports.googleCallback = (req, res, next) => {
       return res.redirect(`${baseUrl}/user/login?error=auth_failed`)
     }
 
-    const tokens = await clientAuthHelper.createTokenPair(user, req)
+    const tokens = await clientAuthHelper.createTokenPair(user, req, res)
 
     const guestCartId = req.cookies?.guestCartId
     const [guestCart, userCart] = await Promise.all([
@@ -73,7 +73,6 @@ module.exports.googleCallback = (req, res, next) => {
     const code = crypto.randomBytes(16).toString('hex')
     oauthCodeStore.set(code, {
       accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
       expiresAt: Date.now() + 300000
     })
 
@@ -95,6 +94,6 @@ module.exports.exchangeOAuthCode = async (req, res) => {
   res.json({
     code: 200,
     message: 'Thành công',
-    data: { accessToken: data.accessToken, refreshToken: data.refreshToken }
+    data: { accessToken: data.accessToken }
   })
 }

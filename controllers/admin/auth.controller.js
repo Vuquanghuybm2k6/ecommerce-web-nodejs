@@ -74,7 +74,7 @@ module.exports.loginPost = async (req, res) => {
     })
   }
 
-  const tokens = await adminAuthHelper.createTokenPair(user, req)
+  const tokens = await adminAuthHelper.createTokenPair(user, req, res)
   logAction('auth', 'admin_login_success', `Admin logged in: ${email}`, { accountId: user.id, email })
   res.json({
     code: 200,
@@ -85,7 +85,7 @@ module.exports.loginPost = async (req, res) => {
 
 // [POST]: /admin/auth/refresh-token
 module.exports.refreshToken = async (req, res) => {
-  const refreshToken = req.body.refreshToken
+  const refreshToken = req.cookies.adminRefreshToken
   if (!refreshToken) {
     return res.status(401).json({ code: 401, message: "Refresh token không tồn tại" })
   }
@@ -109,7 +109,7 @@ module.exports.refreshToken = async (req, res) => {
       revokedAt: new Date()
     })
 
-    const tokens = await adminAuthHelper.createTokenPair(user, req)
+    const tokens = await adminAuthHelper.createTokenPair(user, req, res)
     logAction('auth', 'admin_refresh_success', `Admin token refreshed`, { accountId: user.id, email: user.email })
     return res.json({ code: 200, message: "Refresh token thành công", data: tokens })
   } catch (error) {
@@ -120,13 +120,14 @@ module.exports.refreshToken = async (req, res) => {
 
 // [POST]: /admin/auth/logout
 module.exports.logout = async (req, res) => {
-  const refreshToken = req.body.refreshToken
+  const refreshToken = req.cookies.adminRefreshToken
   if (refreshToken) {
     await AdminRefreshToken.updateOne({ token: refreshToken }, {
       revoked: true,
       revokedAt: new Date()
     })
   }
+  res.clearCookie('adminRefreshToken', { path: '/api/admin' })
   logAction('auth', 'admin_logout', 'Admin logged out', { accountId: req.user?.id })
   res.json({
     code: 200,
