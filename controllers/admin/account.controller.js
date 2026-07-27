@@ -28,9 +28,10 @@ module.exports.index = async (req, res) => {
 
   const records = await Account
   .find(find)
-  .select("-password -token") // loại bỏ những trường không muốn gửi ra bên fe
+  .select("-password -token")
   .limit(pagination.limitItem)
   .skip(pagination.skip)
+  .lean()
   for (const record of records) {
     const role = await Role.findOne({
       _id: record.role_id,
@@ -146,16 +147,17 @@ module.exports.editPatch = async (req, res) => {
 module.exports.detail = async (req, res) => {
   try {
     const id = req.params.id
-    const account = await Account.findOne({
+    let account = await Account.findOne({
       _id: id,
       deleted: false
     }).select("-password -token")
+    .lean()
     const roles = await Role.find({
       deleted: false
     })
     for (const role of roles) {
       if (account.role_id == role.id) {
-        account.role = role.title
+        account.role = role
       }
     }
     res.json({

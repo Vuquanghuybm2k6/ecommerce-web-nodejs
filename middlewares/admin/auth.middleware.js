@@ -35,3 +35,17 @@ module.exports.requireAuth = async (req, res, next) => {
   req.role = role
   next()
 }
+
+module.exports.requirePermission = (...keys) => {
+  return (req, res, next) => {
+    if (!req.role) {
+      return res.status(403).json({ code: 403, message: "Không có quyền truy cập" })
+    }
+    if (req.role.title === 'Super Admin') return next()
+    const hasPermission = keys.some(key => req.role.permissions?.includes(key))
+    if (!hasPermission) {
+      return res.status(403).json({ code: 403, message: "Bạn không có quyền thực hiện hành động này" })
+    }
+    next()
+  }
+}

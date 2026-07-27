@@ -24,5 +24,6 @@ const adminRefreshTokenSchema = new mongoose.Schema({
   }
 })
 
+adminRefreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 const AdminRefreshToken = mongoose.model("AdminRefreshToken", adminRefreshTokenSchema, "adminRefreshTokens")
 module.exports = AdminRefreshToken

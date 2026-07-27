@@ -8,15 +8,6 @@ module.exports.createTokenPair = async (user, req, res) => {
     email: user.email
   }
 
-  await RefreshToken.updateMany({
-    userId: user._id,
-    userAgent: req.get("User-Agent"),
-    revoked: false
-  }, {
-    revoked: true,
-    revokedAt: new Date()
-  })
-
   const accessToken = jwtHelper.signAccessToken(payload)
   const refreshToken = jwtHelper.signRefreshToken(payload)
 

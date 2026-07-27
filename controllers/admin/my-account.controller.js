@@ -7,7 +7,8 @@ module.exports.index = (req, res) => {
     code: 200,
     message: "Thành công",
     data: {
-      user: req.user
+      user: req.user,
+      role: req.role
     }
   });
 }

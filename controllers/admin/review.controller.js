@@ -1,3 +1,4 @@
+const mongoose = require("mongoose")
 const Review = require("../../models/review.model")
 const Product = require("../../models/product.model")
 const User = require("../../models/user.model")
@@ -36,24 +37,32 @@ module.exports.index = async (req, res) => {
       .lean()
 
     const userIds = [...new Set(reviews.map(r => r.user_id))]
-    const users = await User.find({ _id: { $in: userIds } })
-      .select("fullName email")
-      .lean()
     const userMap = {}
-    users.forEach(u => { userMap[u._id.toString()] = u })
+    if (userIds.length) {
+      const users = await User.find({ _id: { $in: userIds.map(id => new mongoose.Types.ObjectId(id)) } })
+        .select("fullName email")
+        .lean()
+      users.forEach(u => { userMap[u._id.toString()] = u })
+    }
 
     const productIds = [...new Set(reviews.map(r => r.product_id))]
-    const products = await Product.find({ _id: { $in: productIds } })
-      .select("title slug")
-      .lean()
     const productMap = {}
-    products.forEach(p => { productMap[p._id.toString()] = p })
+    if (productIds.length) {
+      const products = await Product.find({ _id: { $in: productIds.map(id => new mongoose.Types.ObjectId(id)) } })
+        .select("title slug")
+        .lean()
+      products.forEach(p => { productMap[p._id.toString()] = p })
+    }
 
-    const data = reviews.map(r => ({
-      ...r,
-      user: userMap[r.user_id] || null,
-      product: productMap[r.product_id] || null
-    }))
+    const data = reviews.map(r => {
+      const matchedProduct = productMap[r.product_id] || null
+      return {
+        ...r,
+        user: userMap[r.user_id] || null,
+        product: matchedProduct,
+        product_title: matchedProduct?.title || r.product_title || null
+      }
+    })
 
     const statusCounts = {}
     const counts = await Review.aggregate([
@@ -91,6 +100,7 @@ module.exports.detail = async (req, res) => {
 
     review.user = user
     review.product = product
+    review.product_title = product?.title || review.product_title || null
 
     res.json({
       code: 200,

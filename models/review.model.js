@@ -23,6 +23,10 @@ const reviewSchema = new mongoose.Schema({
     default: ""
   },
   images: [String],
+  product_title: {
+    type: String,
+    default: ""
+  },
   status: {
     type: String,
     enum: ["approved", "reported", "hidden", "deleted"],

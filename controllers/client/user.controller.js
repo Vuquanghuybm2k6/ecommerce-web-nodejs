@@ -171,11 +171,6 @@ module.exports.refreshToken = async (req, res) => {
       return res.status(401).json({ code: 401, message: "Người dùng không hợp lệ" })
     }
 
-    await RefreshToken.updateOne({ _id: tokenRecord._id }, {
-      revoked: true,
-      revokedAt: Date.now()
-    })
-
     const tokens = await createTokenPair(user, req, res)
     logAction('auth', 'refresh_success', `Token refreshed for user ${user.email}`, { userId: user.id, email: user.email })
     return res.json({

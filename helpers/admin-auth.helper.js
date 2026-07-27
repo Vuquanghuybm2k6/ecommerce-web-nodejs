@@ -8,15 +8,6 @@ module.exports.createTokenPair = async (account, req, res) => {
     email: account.email
   }
 
-  await AdminRefreshToken.updateMany({
-    accountId: account._id,
-    userAgent: req.get("User-Agent"),
-    revoked: false
-  }, {
-    revoked: true,
-    revokedAt: new Date()
-  })
-
   const accessToken = jwtHelper.signAccessToken(payload)
   const refreshToken = jwtHelper.signRefreshToken(payload)
 

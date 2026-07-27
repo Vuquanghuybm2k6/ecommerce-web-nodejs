@@ -104,11 +104,6 @@ module.exports.refreshToken = async (req, res) => {
       return res.status(401).json({ code: 401, message: "Tài khoản không hợp lệ" })
     }
 
-    await AdminRefreshToken.updateOne({ _id: tokenRecord._id }, {
-      revoked: true,
-      revokedAt: new Date()
-    })
-
     const tokens = await adminAuthHelper.createTokenPair(user, req, res)
     logAction('auth', 'admin_refresh_success', `Admin token refreshed`, { accountId: user.id, email: user.email })
     return res.json({ code: 200, message: "Refresh token thành công", data: tokens })

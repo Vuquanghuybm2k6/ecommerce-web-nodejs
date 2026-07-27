@@ -89,13 +89,15 @@ module.exports.create = async (req, res) => {
       })
     }
 
+    const product = await Product.findById(product_id).select("title").lean()
     const review = new Review({
       product_id,
       user_id: userId,
       order_id,
       rating,
       content: content || "",
-      images: images || []
+      images: images || [],
+      product_title: product?.title || ""
     })
 
     await review.save()
