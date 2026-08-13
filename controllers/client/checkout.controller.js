@@ -1,12 +1,10 @@
 const Order = require("../../models/order.model")
 const Cart = require("../../models/cart.model")
 const Product = require("../../models/product.model")
-const productHelper = require("../../helpers/product")
-const { sendOrderNotification } = require("../../helpers/orderNotification")
 const { logAction, logger } = require("../../helpers/logger")
 const mongoose = require("mongoose")
 const { enrichCartData } = require("./cart.controller")
-const vnpayHelper = require("../../helpers/vnpay.helper")
+
 // [GET]: /checkout
 module.exports.index = async (req,res)=>{
   const cartId = req.cartId
@@ -61,17 +59,20 @@ module.exports.order = async (req,res)=>{
 
   const orderCode = "DH" + Date.now().toString().slice(-8) // tạo mã đơn hàng
 
-  const isVnPay = req.body.paymentMethod === "vnpay"
+  const paymentMethod = req.body.paymentMethod === 'vnpay' ? 'vnpay' : 'cod'
+
   const objectOrder = {
     cart_id: cartId,
     userInfo,
     products,
-    status: isVnPay? 'pending_vnpay': 'pending',
+    status: 'pending',
     user_id: req.user?.id || '',
-    paymentMethod: isVnPay ? 'vnpay' : 'cod',
+    paymentMethod,
+    paymentStatus: paymentMethod === 'vnpay' ? 'pending' : 'paid',
     shippingMethod: req.body.shippingMethod || '',
     totalPrice,
-    orderCode
+    orderCode,
+    paymentRefs: [orderCode]
   }
 
   const session = await mongoose.startSession()
@@ -88,18 +89,22 @@ module.exports.order = async (req,res)=>{
 
     await session.commitTransaction()
 
-    if (isVnPay) {
-      const paymentUrl = vnpayHelper.createPaymentUrl(order, req)
-      logAction('payment', 'create_order_vnpay', `Order ${orderCode} created via VNPay`, { orderId: order.id, orderCode, paymentMethod: 'vnpay' })
-      return res.status(200).json({
-        code: 200,
-        message: "Chuyển hướng đến cổng thanh toán VNPay",
-        data: { paymentUrl, orderId: order.id, orderCode }
-      })
-    }
+    logAction('payment', 'create_order', `Order ${orderCode} created via ${paymentMethod}`, { orderId: order.id, orderCode, paymentMethod })
 
-    logAction('payment', 'create_order_cod', `Order ${orderCode} created via COD`, { orderId: order.id, orderCode, paymentMethod: 'cod' })
-    res.status(200).json({ code: 200, message: "Đặt hàng thành công", data: { orderId: order.id, orderCode } })
+    let paymentUrl = null
+    if (paymentMethod === 'vnpay') {
+      const { buildPaymentUrl, getClientIp } = require("../../helpers/vnpay")
+      paymentUrl = buildPaymentUrl({
+        amount: totalPrice,
+        orderCode,
+        returnUrl: process.env.VNP_RETURN_URL,
+        ipAddr: getClientIp(req),
+        locale: 'vn',
+      })
+    } 
+
+    const message = paymentMethod === 'vnpay' ? "Chuyển hướng thanh toán VNPay" : "Đặt hàng thành công"
+    res.status(200).json({ code: 200, message, data: { orderId: order.id, orderCode, paymentUrl } })
   } catch (error) {
     await session.abortTransaction() // nếu có lỗi thì mongodb sẽ khôi phục cái session vừa tạo
     logger.error('Đặt hàng thất bại', { error: error.message, stack: error.stack })
@@ -128,56 +133,4 @@ module.exports.success = async (req,res)=>{
     message: "Thành công",
     data: { order: order }
   })
-}
-
-// [GET]: /checkout/vnpay-return
-module.exports.vnpayReturn = async (req, res) => {
-  const result = vnpayHelper.verifyReturn(req.query)
-
-  const order = await Order.findOne({ orderCode: result.txnRef })
-  if (!order) {
-    return res.redirect(`${process.env.VNP_FRONTEND_RETURN_URL}?success=false&message=Order not found`)
-  }
-
-  if (!result.isValid) {
-    logger.warn('VNPay signature verification failed', {
-      orderCode: result.txnRef,
-      responseCode: result.responseCode,
-      transactionNo: result.transactionNo,
-    })
-  }
-
-  const paymentInfo = {
-    transactionId: result.transactionNo,
-    bankCode: result.bankCode,
-    payDate: result.payDate,
-    paymentStatus: result.isValid && result.responseCode === '00' ? 'success' : 'failed'
-  }
-
-  const newStatus = (result.isValid && result.responseCode === '00') ? 'pending' : 'payment_failed'
-
-  await Order.updateOne(
-    { _id: order._id },
-    { $set: { status: newStatus, paymentInfo } }
-  )
-
-  const frontendUrl = new URL(process.env.VNP_FRONTEND_RETURN_URL)
-  frontendUrl.searchParams.set('success', newStatus === 'pending' ? 'true' : 'false')
-  if (newStatus === 'pending') {
-    frontendUrl.searchParams.set('orderId', order._id.toString())
-  }
-
-  sendOrderNotification(order, newStatus)
-
-  logAction('payment', 'vnpay_return', `VNPay return for order ${order.orderCode}: ${newStatus}`, {
-    orderCode: order.orderCode,
-    orderId: order._id.toString(),
-    newStatus,
-    transactionId: paymentInfo.transactionId,
-    bankCode: paymentInfo.bankCode,
-    responseCode: result.responseCode,
-    signatureValid: result.isValid,
-  })
-
-  res.redirect(frontendUrl.toString())
 }

@@ -7,43 +7,6 @@ const orderSchema = new mongoose.Schema({
     phone: String,
     address: String
   },
-  products :[
-    {
-      product_id: String,
-      price: Number,
-      discountPercentage: Number,
-      priceNew: Number,
-      quantity: Number,
-      variantSku: { type: String, default: "" },
-      variantLabel: { type: String, default: "" },
-      variantOptions: [{ key: String, value: String }]
-    }
-  ],
-  status: {
-    type: String,
-    enum: ['pending', 'pending_vnpay', 'payment_failed', 'confirmed', 'shipped', 'delivered', 'cancelled'],
-    default: 'pending'
-  },
-  totalPrice: {
-    type: Number,
-    default: 0
-  },
-  orderCode:{
-    type: String,
-    unique: true
-  },
-  paymentMethod: {
-    type: String,
-    enum: ['cod', 'vnpay'],
-    default: 'cod'
-  },
-  paymentInfo: {
-    transactionId: String, // vnp_TransactionNo
-    bankCode: String, // vnp_BankCode
-    payDate: String, // vnp_PayDate
-    paymentStatus: String // 'success' or 'failed'
-  },
-  shippingMethod: String,
   products: [{
     product_id: String,
     price: Number,
@@ -54,6 +17,33 @@ const orderSchema = new mongoose.Schema({
     variantLabel: { type: String, default: "" },
     variantOptions: [{ key: String, value: String }]
   }],
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending'
+  },
+  totalPrice: {
+    type: Number,
+    default: 0
+  },
+  orderCode:{
+    type: String,
+    unique: true
+  },
+  paymentRefs: {
+    type: [String],
+    default: []
+  },
+  paymentMethod: {
+    type: String,
+    default: 'cod'
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'cancelled'],
+    default: 'pending'
+  },
+  shippingMethod: String,
   deleted: {
     type: Boolean,
     default: false

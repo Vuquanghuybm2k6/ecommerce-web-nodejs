@@ -11,8 +11,6 @@ const mongoose = require("mongoose")
 const orderStatuses = [
   { name: "Tất cả", class: "", status: "" },
   { name: "Chờ xác nhận", class: "", status: "pending" },
-  {name: "Chờ thanh toán VNPAY", class: "", status: "pending_vnpay"},
-  { name: "Thanh toán thất bại", class: "", status: "payment_failed" },
   { name: "Đã xác nhận", class: "", status: "confirmed" },
   { name: "Đang giao hàng", class: "", status: "shipped" },
   { name: "Đã giao hàng", class: "", status: "delivered" },
@@ -86,7 +84,7 @@ module.exports.detail = async (req, res) => {
 module.exports.changeStatus = async (req, res) => {
   const id = req.params.id
   const newStatus = req.body.status
-  const validStatuses = ["pending", "pending_vnpay", "payment_failed", "confirmed", "shipped", "delivered", "cancelled"]
+  const validStatuses = ["pending", "confirmed", "shipped", "delivered", "cancelled"]
   if (!validStatuses.includes(newStatus)) {
     return res.status(400).json({ code: 400, message: "Trạng thái không hợp lệ" })
   }
@@ -148,7 +146,7 @@ module.exports.changeStatus = async (req, res) => {
     } finally {
       session.endSession()
     }
-  } else if (newStatus === "cancelled" && !["pending", "pending_vnpay", "payment_failed"].includes(order.status)) {
+  } else if (newStatus === "cancelled" && order.status !== "pending") {
     const session = await mongoose.startSession()
     session.startTransaction()
     try {

@@ -4,8 +4,6 @@ const sendMailHelper = require("../helpers/sendMail")
 
 const statusLabels = {
   pending: "Chờ xác nhận",
-  pending_vnpay: "Chờ thanh toán VNPay",
-  payment_failed: "Thanh toán thất bại",
   confirmed: "Đã xác nhận",
   shipped: "Đang giao hàng",
   delivered: "Đã giao hàng",
@@ -18,16 +16,6 @@ const getEmailContent = (order, newStatus, reason) => {
   let subject, body
 
   switch (newStatus) {
-    case "pending_vnpay":
-      subject = `Đơn hàng ${orderCode} sẵn sàng thanh toán lại`
-      body = `<p>Đơn hàng <b>${orderCode}</b> của bạn đã sẵn sàng để thanh toán lại qua VNPay.</p>
-              <p>Vui lòng truy cập website và tiến hành thanh toán.</p>`
-      break
-    case "payment_failed":
-      subject = `Đơn hàng ${orderCode} thanh toán thất bại`
-      body = `<p>Thanh toán cho đơn hàng <b>${orderCode}</b> không thành công.</p>
-              <p>Vui lòng kiểm tra lại thông tin hoặc thử phương thức thanh toán khác.</p>`
-      break
     case "confirmed":
       subject = `Đơn hàng ${orderCode} đã được xác nhận`
       body = `<p>Đơn hàng <b>${orderCode}</b> của bạn đã được xác nhận.</p>
