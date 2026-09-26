@@ -1,11 +1,11 @@
 const Order = require("../models/order.model")
 const Cart = require("../models/cart.model")
+const cartService = require("./cart.service")
 const httpError = require("../helpers/httpError")
 const { runInTransaction } = require("../helpers/transaction")
-const { enrichCartData, resolveCartLinePricing } = require("../helpers/cart")
-const { findProductMapByIds } = require("../helpers/product")
+const { enrichCartData } = require("../helpers/cart")
 const { enrichOrder } = require("../helpers/order")
-const { buildPaymentUrl, getClientIp } = require("../helpers/vnpay")
+const { buildPaymentUrl } = require("../helpers/vnpay")
 const { logAction } = require("../helpers/logger")
 
 const getCheckoutDetail = async (cartId) => {
@@ -18,25 +18,8 @@ const createOrder = async ({ cartId, body, userId, ipAddr }) => {
   if (!cart) throw httpError(404, "Giỏ hàng không tồn tại")
   if (!cart.products || cart.products.length === 0) throw httpError(400, "Giỏ hàng đang trống")
 
-  const productMap = await findProductMapByIds(cart.products.map(item => item.product_id))
-
-  let totalPrice = 0
-  const products = cart.products.map((item) => {
-    const productInfo = productMap[String(item.product_id)]
-    const { price, priceNew, discountPercentage } = resolveCartLinePricing(item, productInfo)
-    totalPrice += priceNew * item.quantity
-
-    return {
-      product_id: item.product_id,
-      quantity: item.quantity,
-      discountPercentage: discountPercentage,
-      price: price,
-      priceNew: priceNew,
-      variantSku: item.variantSku || "",
-      variantLabel: item.variantLabel || "",
-      variantOptions: item.variantOptions || []
-    }
-  })
+  // Dùng chung cách tính giá với cart service để giá trong đơn luôn khớp giỏ
+  const { products, totalPrice } = await cartService.buildOrderLines(cart.products)
 
   const orderCode = "DH" + Date.now().toString().slice(-8)
   const paymentMethod = body.paymentMethod === 'vnpay' ? 'vnpay' : 'cod'
