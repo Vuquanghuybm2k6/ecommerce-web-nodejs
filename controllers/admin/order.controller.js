@@ -1,215 +1,70 @@
-const Order = require("../../models/order.model")
-const Product = require("../../models/product.model")
-const paginationHelper = require("../../helpers/pagination")
-const searchHelper = require("../../helpers/search")
-const { enrichOrder } = require("../client/order.controller")
-const { isValidTransition } = require("../../helpers/orderStatus")
-const { sendOrderNotification } = require("../../helpers/orderNotification")
-const { logAction, logger } = require("../../helpers/logger")
-const mongoose = require("mongoose")
-
-const orderStatuses = [
-  { name: "Tất cả", class: "", status: "" },
-  { name: "Chờ xác nhận", class: "", status: "pending" },
-  { name: "Đã xác nhận", class: "", status: "confirmed" },
-  { name: "Đang giao hàng", class: "", status: "shipped" },
-  { name: "Đã giao hàng", class: "", status: "delivered" },
-  { name: "Đã hủy", class: "", status: "cancelled" },
-]
+const orderService = require("../../services/order.service")
+const { logger } = require("../../helpers/logger")
+const httpError = require("../../helpers/httpError")
 
 // [GET]: /admin/orders
 module.exports.index = async (req, res) => {
-  let find = { deleted: false }
-  if (req.query.status) find.status = req.query.status
-  if (req.query.keyword) find.orderCode = searchHelper(req.query)
-
-  const filterStatus = orderStatuses.map(item => ({
-    ...item,
-    class: item.status === (req.query.status || "") ? "active" : ""
-  }))
-
-  const totalOrder = await Order.countDocuments(find)
-  const pagination = paginationHelper(req.query, totalOrder, {
-    currentPage: 1,
-    limitItem: 10
-  })
-
-  const sort = {}
-  if (req.query.sortKey && req.query.sortValue) {
-    sort[req.query.sortKey] = req.query.sortValue
-  } else {
-    sort.createdAt = "desc"
+  try {
+    res.json({
+      code: 200,
+      message: "Thành công",
+      data: await orderService.listOrders(req.query)
+    })
+  } catch (error) {
+    logger.error('Lỗi lấy danh sách đơn hàng', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Lỗi lấy danh sách đơn hàng")
+    res.status(statusCode).json(body)
   }
-
-  const orders = await Order.find(find)
-    .limit(pagination.limitItem)
-    .skip(pagination.skip)
-    .sort(sort)
-    .lean()
-
-  const enrichedOrders = await Promise.all(orders.map(order => enrichOrder(order)))
-
-  res.json({
-    code: 200,
-    message: "Thành công",
-    data: {
-      orders: enrichedOrders,
-      filterStatus,
-      keyword: req.query.keyword || "",
-      pagination
-    }
-  })
 }
 
 // [GET]: /admin/orders/detail/:id
 module.exports.detail = async (req, res) => {
   try {
-    const id = req.params.id
-    const order = await Order.findOne({ _id: id, deleted: false }).lean()
-    if (!order) {
-      return res.status(404).json({ code: 404, message: "Không tìm thấy đơn hàng" })
-    }
-    const enrichedOrder = await enrichOrder(order)
     res.json({
       code: 200,
       message: "Thành công",
-      data: { order: enrichedOrder }
+      data: await orderService.getOrderDetail(req.params.id)
     })
   } catch (error) {
-    res.status(400).json({ code: 400, message: "Lỗi" })
+    logger.error('Lỗi lấy chi tiết đơn hàng', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Lỗi lấy chi tiết đơn hàng")
+    res.status(statusCode).json(body)
   }
 }
 
 // [PATCH]: /admin/orders/change-status/:id
 module.exports.changeStatus = async (req, res) => {
-  const id = req.params.id
-  const newStatus = req.body.status
-  const validStatuses = ["pending", "confirmed", "shipped", "delivered", "cancelled"]
-  if (!validStatuses.includes(newStatus)) {
-    return res.status(400).json({ code: 400, message: "Trạng thái không hợp lệ" })
-  }
-
-  const order = await Order.findOne({ _id: id, deleted: false }).lean()
-  if (!order) {
-    return res.status(404).json({ code: 404, message: "Không tìm thấy đơn hàng" })
-  }
-
-  if (!isValidTransition(order.status, newStatus)) {
-    return res.status(400).json({
-      code: 400,
-      message: `Không thể chuyển từ "${order.status}" sang "${newStatus}"`
+  try {
+    await orderService.changeStatus({
+      id: req.params.id,
+      newStatus: req.body.status,
+      reason: req.body.reason,
+      adminId: req.user?.id
     })
+
+    res.json({
+      code: 200,
+      message: "Cập nhật trạng thái thành công"
+    })
+  } catch (error) {
+    logger.error('Lỗi cập nhật trạng thái đơn hàng', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Cập nhật trạng thái đơn hàng thất bại")
+    res.status(statusCode).json(body)
   }
-
-  if (!order.products || order.products.length === 0) {
-    return res.status(400).json({ code: 400, message: "Đơn hàng không có sản phẩm" })
-  }
-
-  if (newStatus === "confirmed" && order.status === "pending") {
-    const session = await mongoose.startSession()
-    session.startTransaction()
-    try {
-      for (const product of order.products) {
-        const productDoc = await Product.findOne({ _id: product.product_id }).session(session)
-        if (!productDoc) {
-          throw new Error(`Không tìm thấy sản phẩm ${product.product_id}`)
-        }
-        // trừ tồn kho của đúng biến thể đang đặt hàng
-        const matchSku = product.variantSku || ""
-        let variantIndex = productDoc.variants.findIndex(v => v.sku === matchSku)
-        if (variantIndex === -1) variantIndex = 0
-        const targetVariant = productDoc.variants[variantIndex]
-        if (targetVariant) {
-          if (targetVariant.stock < product.quantity) {
-            throw new Error(`Sản phẩm "${productDoc.title}" (${targetVariant.label}) không đủ hàng (còn ${targetVariant.stock}, cần ${product.quantity})`)
-          }
-          await Product.updateOne(
-            { _id: product.product_id },
-            { $inc: { [`variants.${variantIndex}.stock`]: -product.quantity } },
-            { session }
-          )
-        }
-      }
-      await Order.updateOne(
-        { _id: id },
-        { $set: { status: newStatus } },
-        { session }
-      )
-      await session.commitTransaction()
-    } catch (error) {
-      await session.abortTransaction()
-      logger.error('Xác nhận giao dịch thất bại', { error: error.message, orderId: id, orderCode: order.orderCode })
-      return res.status(500).json({
-        code: 500,
-        message: error.message || "Xác nhận đơn hàng thất bại"
-      })
-    } finally {
-      session.endSession()
-    }
-  } else if (newStatus === "cancelled" && order.status !== "pending") {
-    const session = await mongoose.startSession()
-    session.startTransaction()
-    try {
-      for (const product of order.products) {
-        const productDoc = await Product.findOne({ _id: product.product_id }).session(session)
-        if (!productDoc) {
-          throw new Error(`Không tìm thấy sản phẩm ${product.product_id}`)
-        }
-        // hoàn tôn kho của đúng biến thể đang đặt hàng
-        const matchSku = product.variantSku || ""
-        let variantIndex = productDoc.variants.findIndex(v => v.sku === matchSku)
-        if (variantIndex === -1) variantIndex = 0
-        if (productDoc.variants[variantIndex]) {
-          await Product.updateOne(
-            { _id: product.product_id },
-            { $inc: { [`variants.${variantIndex}.stock`]: product.quantity } },
-            { session }
-          )
-        }
-      }
-      await Order.updateOne(
-        { _id: id },
-        { $set: { status: newStatus } },
-        { session }
-      )
-      await session.commitTransaction()
-    } catch (error) {
-      await session.abortTransaction()
-      logger.error('Hủy giao dịch thất bại', { error: error.message, orderId: id, orderCode: order.orderCode })
-      return res.status(500).json({
-        code: 500,
-        message: error.message || "Hủy đơn hàng thất bại"
-      })
-    } finally {
-      session.endSession()
-    }
-  } else {
-    await Order.updateOne({ _id: id }, { $set: { status: newStatus } })
-  }
-
-  sendOrderNotification(order, newStatus, req.body.reason)
-
-  logAction('order', 'change_status', `Order ${order.orderCode} status changed: ${order.status} -> ${newStatus}`, {
-    orderId: id,
-    orderCode: order.orderCode,
-    fromStatus: order.status,
-    toStatus: newStatus,
-    reason: req.body.reason || '',
-    adminId: req.user?.id,
-  })
-
-  res.json({
-    code: 200,
-    message: "Cập nhật trạng thái thành công"
-  })
 }
 
 // [PATCH]: /admin/orders/delete/:id
 module.exports.delete = async (req, res) => {
-  const id = req.params.id
-  await Order.updateOne({ _id: id }, { deleted: true })
-  res.json({
-    code: 200,
-    message: "Xóa đơn hàng thành công"
-  })
+  try {
+    await orderService.softDelete(req.params.id)
+
+    res.json({
+      code: 200,
+      message: "Xóa đơn hàng thành công"
+    })
+  } catch (error) {
+    logger.error('Lỗi xóa đơn hàng', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Xóa đơn hàng thất bại")
+    res.status(statusCode).json(body)
+  }
 }

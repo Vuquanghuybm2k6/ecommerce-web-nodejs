@@ -1,133 +1,55 @@
-const Order = require("../../models/order.model")
-const Product = require("../../models/product.model")
-const productHelper = require("../../helpers/product")
-const paginationHelper = require("../../helpers/pagination")
-const { sendOrderNotification } = require("../../helpers/orderNotification")
-const { logAction } = require("../../helpers/logger")
-const mongoose = require("mongoose")
-
-const enrichOrder = async (order) => {
-  if (!order) return null
-
-  const productInfos = await Promise.all(
-    order.products.map(product => Product.findOne({ _id: product.product_id }).select("title variants").lean())
-  )
-
-  order.products.forEach((product, index) => {
-    const productInfo = productInfos[index]
-    const thumbnail = productInfo?.variants?.[0]?.thumbnail || ''
-    product.productInfo = productInfo ? { ...productInfo, thumbnail } : null
-    product.totalPrice = (product.priceNew || 0) * product.quantity
-  })
-
-  order.totalPrice = order.products.reduce((sum, item) => sum + item.totalPrice, 0)
-  return order
-}
-
-module.exports.enrichOrder = enrichOrder
+const orderService = require("../../services/order.service")
+const { logger } = require("../../helpers/logger")
+const httpError = require("../../helpers/httpError")
 
 // [GET]: /api/orders
 module.exports.index = async (req, res) => {
-  const userId = req.user.id
-
-  const find = { user_id: userId, deleted: false }
-
-  const totalOrders = await Order.countDocuments(find)
-  const pagination = paginationHelper(req.query, totalOrders, {
-    currentPage: 1,
-    limitItem: 10
-  })
-  pagination.totalItem = totalOrders
-
-  const orders = await Order.find(find)
-    .limit(pagination.limitItem)
-    .skip(pagination.skip)
-    .sort({ createdAt: -1 })
-    .lean()
-
-  const enrichedOrders = await Promise.all(orders.map(order => enrichOrder(order)))
-
-  res.json({
-    code: 200,
-    message: "Thành công",
-    data: { orders: enrichedOrders, pagination }
-  })
+  try {
+    res.json({
+      code: 200,
+      message: "Thành công",
+      data: await orderService.listOrdersByUser({ userId: req.user.id, query: req.query })
+    })
+  } catch (error) {
+    logger.error('Lỗi lấy danh sách đơn hàng', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Lỗi lấy danh sách đơn hàng")
+    res.status(statusCode).json(body)
+  }
 }
 
 // [GET]: /api/orders/:orderId
 module.exports.detail = async (req, res) => {
-  const userId = req.user.id
-  const orderId = req.params.orderId
-
-  const order = await Order.findOne({
-    _id: orderId,
-    user_id: userId,
-    deleted: false
-  }).lean()
-
-  if (!order) {
-    return res.status(404).json({
-      code: 404,
-      message: "Không tìm thấy đơn hàng"
+  try {
+    res.json({
+      code: 200,
+      message: "Thành công",
+      data: await orderService.getOrderDetailByUser({
+        orderId: req.params.orderId,
+        userId: req.user.id
+      })
     })
+  } catch (error) {
+    logger.error('Lỗi lấy chi tiết đơn hàng', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Lỗi lấy chi tiết đơn hàng")
+    res.status(statusCode).json(body)
   }
-
-  const enrichedOrder = await enrichOrder(order)
-
-  res.json({
-    code: 200,
-    message: "Thành công",
-    data: { order: enrichedOrder }
-  })
 }
 
 // [PATCH]: /api/orders/cancel/:orderId
 module.exports.cancel = async (req, res) => {
-  const userId = req.user.id
-  const orderId = req.params.orderId
-
-  const order = await Order.findOne({
-    _id: orderId,
-    user_id: userId,
-    deleted: false
-  })
-
-  if (!order) {
-    return res.status(404).json({
-      code: 404,
-      message: "Không tìm thấy đơn hàng"
+  try {
+    await orderService.cancelByUser({
+      orderId: req.params.orderId,
+      userId: req.user.id
     })
-  }
 
-  if (order.status !== "pending") {
-    return res.status(400).json({
-      code: 400,
-      message: "Chỉ có thể hủy đơn hàng đang chờ xác nhận"
+    res.json({
+      code: 200,
+      message: "Hủy đơn hàng thành công"
     })
+  } catch (error) {
+    logger.error('Lỗi hủy đơn hàng', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Hủy đơn hàng thất bại")
+    res.status(statusCode).json(body)
   }
-
-  if (order.paymentStatus === "paid") {
-    return res.status(400).json({
-      code: 400,
-      message: "Đơn hàng đã thanh toán, không thể hủy"
-    })
-  }
-
-  await Order.updateOne(
-    { _id: orderId },
-    { $set: { status: "cancelled" } }
-  )
-
-  sendOrderNotification(order, "cancelled")
-
-  logAction('order', 'user_cancel', `User cancelled order ${order.orderCode}`, {
-    orderCode: order.orderCode,
-    orderId: orderId,
-    userId,
-  })
-
-  res.json({
-    code: 200,
-    message: "Hủy đơn hàng thành công"
-  })
 }
