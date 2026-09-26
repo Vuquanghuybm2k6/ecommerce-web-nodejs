@@ -2,7 +2,19 @@ const User = require("../models/user.model")
 const RefreshToken = require("../models/refresh-token.model")
 const jwtHelper = require("./jwt.helper")
 
-module.exports.createTokenPair = async (user, req, res) => {
+const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000
+
+const REFRESH_TOKEN_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'none',
+  path: '/api',
+  maxAge: REFRESH_TOKEN_MAX_AGE
+}
+
+// Cấp cặp access token + refresh token mà không phụ thuộc req/res,
+// để service có thể dùng mà không cần chạm vào đối tượng express.
+const issueTokenPair = async ({ user, userAgent = "", ip = "" }) => {
   const payload = {
     id: user._id,
     email: user.email
@@ -14,22 +26,33 @@ module.exports.createTokenPair = async (user, req, res) => {
   const refreshTokenModel = new RefreshToken({
     userId: user._id,
     token: refreshToken,
-    userAgent: req.get("User-Agent") || "",
-    ip: req.ip,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    userAgent: userAgent,
+    ip: ip,
+    expiresAt: new Date(Date.now() + REFRESH_TOKEN_MAX_AGE)
   })
 
   await refreshTokenModel.save()
 
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    path: '/api',
-    maxAge: 7 * 24 * 60 * 60 * 1000
+  return { accessToken, refreshToken }
+}
+
+const setRefreshTokenCookie = (res, refreshToken) => {
+  res.cookie('refreshToken', refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS)
+}
+
+module.exports.issueTokenPair = issueTokenPair
+module.exports.setRefreshTokenCookie = setRefreshTokenCookie
+
+module.exports.createTokenPair = async (user, req, res) => {
+  const tokens = await issueTokenPair({
+    user,
+    userAgent: req.get("User-Agent") || "",
+    ip: req.ip
   })
 
-  return { accessToken }
+  setRefreshTokenCookie(res, tokens.refreshToken)
+
+  return { accessToken: tokens.accessToken }
 }
 
 module.exports.setAuthCookies = (res, tokens) => {

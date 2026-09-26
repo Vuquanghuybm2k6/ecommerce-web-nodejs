@@ -1,15 +1,24 @@
-const User = require("../../models/user.model")
-const bcrypt = require("bcrypt")
-const redis = require("../../config/redis")
-const generateHelper = require("../../helpers/generate")
-const sendMailHelper = require("../../helpers/sendMail")
-const Cart = require("../../models/cart.model")
-const jwtHelper = require("../../helpers/jwt.helper")
-const RefreshToken = require("../../models/refresh-token.model")
-const clientAuthHelper = require("../../helpers/auth.helper")
-const { logAction } = require("../../helpers/logger")
+const userService = require("../../services/user.service")
+const { setRefreshTokenCookie } = require("../../helpers/auth.helper")
+const { logger } = require("../../helpers/logger")
+const httpError = require("../../helpers/httpError")
 
-const createTokenPair = clientAuthHelper.createTokenPair
+// Ưu tiên cart id gửi lên header nếu khác với cart mà cart middleware đã gán.
+const resolveGuestCartId = (req) => {
+  const headerCartId = req.headers['x-cart-id']
+  if (headerCartId && headerCartId !== req.cartId?.toString()) {
+    return headerCartId
+  }
+  return req.cartId
+}
+
+const requireAuth = (req, res) => {
+  if (!req.user) {
+    res.status(401).json({ code: 401, message: "Vui lòng đăng nhập" })
+    return false
+  }
+  return true
+}
 
 // [GET]: /user/register
 module.exports.register = (req, res) => {
@@ -18,48 +27,30 @@ module.exports.register = (req, res) => {
 
 // [POST]: /user/register
 module.exports.registerPost = async (req, res) => {
-  const emailExit = await User.findOne({ email: req.body.email, deleted: false })
-  if (emailExit) {
-    return res.status(400).json({ code: 400, message: "Email này đã tồn tại" })
+  try {
+    const data = await userService.register({
+      body: req.body,
+      cartId: resolveGuestCartId(req),
+      userAgent: req.get("User-Agent") || "",
+      ip: req.ip
+    })
+
+    setRefreshTokenCookie(res, data.refreshToken)
+
+    res.json({
+      code: 200,
+      message: "Đăng kí tài khoản thành công",
+      data: {
+        user: data.user,
+        cartId: data.cartId,
+        accessToken: data.accessToken
+      }
+    })
+  } catch (error) {
+    logger.error('Lỗi đăng kí tài khoản', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Đăng kí tài khoản thất bại")
+    res.status(statusCode).json(body)
   }
-
-  req.body.password = bcrypt.hashSync(req.body.password, 10)
-  const user = new User(req.body)
-  await user.save()
-  const tokens = await createTokenPair(user, req, res)
-
-  let rawCartId = req.cartId
-  const headerCartId = req.headers['x-cart-id']
-  if (headerCartId && headerCartId !== rawCartId?.toString()) {
-    rawCartId = headerCartId
-  }
-  let cart = rawCartId ? await Cart.findById(rawCartId) : null
-
-  if (cart) {
-    cart.user_id = user.id
-    await cart.save()
-  } else {
-    cart = new Cart({ products: [], user_id: user.id })
-    await cart.save()
-  }
-
-  // Cleanup duplicate carts for this user
-  await Cart.deleteMany({
-    user_id: user.id,
-    _id: { $ne: cart._id }
-  })
-
-  logAction('auth', 'register', `User registered: ${user.email}`, { userId: user.id, email: user.email })
-
-  res.json({
-    code: 200,
-    message: "Đăng kí tài khoản thành công",
-    data: {
-      user: { id: user.id, email: user.email },
-      cartId: cart.id,
-      accessToken: tokens.accessToken
-    }
-  })
 }
 
 // [GET]: /user/login
@@ -69,137 +60,65 @@ module.exports.login = (req, res) => {
 
 // [POST]: /user/login
 module.exports.loginPost = async (req, res) => {
-  const email = req.body.email
-  const password = req.body.password
-  const user = await User.findOne({ email: email, deleted: false })
-  if (!user) {
-    logAction('auth', 'login_failed', `Login failed: email not found`, { email })
-    return res.status(401).json({ code: 401, message: "Email không tồn tại" })
-  }
-  if (user.status == "inactive") {
-    logAction('auth', 'login_failed', `Login failed: account inactive`, { email })
-    return res.status(401).json({ code: 401, message: "Tài khoản hiện đang bị khóa" })
-  }
+  try {
+    const data = await userService.login({
+      email: req.body.email,
+      password: req.body.password,
+      cartId: resolveGuestCartId(req),
+      userAgent: req.get("User-Agent") || "",
+      ip: req.ip
+    })
 
-  if (user.authType == "google") {
-    logAction('auth', 'login_failed', `Login failed: Google account`, { email })
-    return res.status(401).json({ code: 401, message: "Tài khoản này sử dụng Google để đăng nhập" })
-  }
+    setRefreshTokenCookie(res, data.refreshToken)
 
-  if (!bcrypt.compareSync(password, user.password)) {
-    logAction('auth', 'login_failed', `Login failed: wrong password`, { email })
-    return res.status(401).json({ code: 401, message: "Sai mật khẩu" })
-  }
-
-  const tokens = await createTokenPair(user, req, res)
-
-  let guestCartId = req.cartId
-  const rawHeaderCartId = req.headers['x-cart-id']
-
-  if (rawHeaderCartId && rawHeaderCartId !== guestCartId?.toString()) {
-    guestCartId = rawHeaderCartId
-  }
-
-  const [guestCart, userCart] = await Promise.all([
-    guestCartId ? Cart.findById(guestCartId) : null,
-    Cart.findOne({ user_id: user.id }).sort({ createdAt: -1 })
-  ])
-
-  let finalCart = userCart
-
-  if (guestCart && userCart) {
-    if (guestCart._id.toString() !== userCart._id.toString()) {
-      for (const item of guestCart.products) {
-        const existing = userCart.products.find(p =>
-          p.product_id.toString() === item.product_id.toString()
-          && (p.variantSku || '') === (item.variantSku || '')
-        )
-        if (existing) {
-          existing.quantity += item.quantity
-        } else {
-          userCart.products.push(item)
-        }
+    res.json({
+      code: 200,
+      message: "Đăng nhập thành công",
+      data: {
+        user: data.user,
+        cartId: data.cartId,
+        accessToken: data.accessToken
       }
-      await userCart.save()
-      await Cart.deleteOne({ _id: guestCart._id })
-    }
-  } else if (guestCart && !userCart) {
-    guestCart.user_id = user.id
-    finalCart = guestCart
-    await guestCart.save()
-  } else if (!guestCart && !userCart) {
-    finalCart = new Cart({ products: [], user_id: user.id })
-    await finalCart.save()
+    })
+  } catch (error) {
+    logger.error('Lỗi đăng nhập', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Đăng nhập thất bại")
+    res.status(statusCode).json(body)
   }
-
-  // Cleanup duplicate carts for this user
-  await Cart.deleteMany({
-    user_id: user.id,
-    _id: { $ne: finalCart._id }
-  })
-
-  logAction('auth', 'login_success', `User logged in: ${email}`, { userId: user.id, email })
-  res.json({
-    code: 200,
-    message: "Đăng nhập thành công",
-    data: {
-      user: { id: user.id, email: user.email },
-      cartId: finalCart._id,
-      accessToken: tokens.accessToken
-    }
-  })
 }
 
 // [POST]: /user/refresh-token
 module.exports.refreshToken = async (req, res) => {
-  const refreshToken = req.cookies.refreshToken
-  if (!refreshToken) {
-    return res.status(401).json({ code: 401, message: "Refresh token không tồn tại" })
-  }
-
   try {
-    const payload = jwtHelper.verifyRefreshToken(refreshToken)
-    const tokenRecord = await RefreshToken.findOne({ token: refreshToken, revoked: false })
-    if (!tokenRecord) {
-      logAction('auth', 'refresh_failed', 'Refresh failed: invalid token')
-      return res.status(401).json({ code: 401, message: "Refresh token không hợp lệ" })
-    }
+    const data = await userService.refreshToken(req.cookies.refreshToken)
 
-    const user = await User.findOne({ _id: payload.id, deleted: false })
-    if (!user) {
-      logAction('auth', 'refresh_failed', 'Refresh failed: user not found', { userId: payload.id })
-      return res.status(401).json({ code: 401, message: "Người dùng không hợp lệ" })
-    }
+    setRefreshTokenCookie(res, data.refreshToken)
 
-    const tokens = await createTokenPair(user, req, res)
-    logAction('auth', 'refresh_success', `Token refreshed for user ${user.email}`, { userId: user.id, email: user.email })
-    return res.json({
+    res.json({
       code: 200,
       message: "Refresh token thành công",
-      data: {
-        accessToken: tokens.accessToken
-      }
+      data: { accessToken: data.accessToken }
     })
   } catch (error) {
-    logAction('auth', 'refresh_failed', 'Refresh failed: session expired')
-    return res.status(401).json({ code: 401, message: "Phiên đã hết hạn. Vui lòng đăng nhập lại" })
+    logger.error('Lỗi refresh token', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Refresh token thất bại")
+    res.status(statusCode).json(body)
   }
 }
 
 // [POST]: /user/logout
 module.exports.logout = async (req, res) => {
-  const refreshToken = req.cookies.refreshToken
+  try {
+    await userService.logout({ token: req.cookies.refreshToken, userId: req.user?.id })
 
-  if (refreshToken) {
-    await RefreshToken.updateOne({ token: refreshToken }, {
-      revoked: true,
-      revokedAt: Date.now()
-    })
+    res.clearCookie('refreshToken', { path: '/api', secure: true, sameSite: 'none' })
+
+    res.json({ code: 200, message: "Đăng xuất thành công" })
+  } catch (error) {
+    logger.error('Lỗi đăng xuất', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Đăng xuất thất bại")
+    res.status(statusCode).json(body)
   }
-
-  res.clearCookie('refreshToken', { path: '/api', secure: true, sameSite: 'none' })
-  logAction('auth', 'logout', `User logged out`, { userId: req.user?.id })
-  res.json({ code: 200, message: "Đăng xuất thành công" })
 }
 
 // [GET]: /user/password/forgot
@@ -209,132 +128,122 @@ module.exports.forgotPassword = (req, res) => {
 
 // [POST]: /user/password/forgot
 module.exports.forgotPasswordPost = async (req, res) => {
-  const email = req.body.email
-  const user = await User.findOne({
-    email: email,
-    deleted: false
-  })
-  if (!user) {
-    return res.status(400).json({ code: 400, message: "Email không tồn tại" })
+  try {
+    res.json({
+      code: 200,
+      message: "Mã OTP đã được gửi qua email",
+      data: await userService.sendOtp(req.body.email)
+    })
+  } catch (error) {
+    logger.error('Lỗi gửi OTP lấy lại mật khẩu', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Gửi OTP thất bại")
+    res.status(statusCode).json(body)
   }
-  const otp = generateHelper.generateRandomNumber(6)
-  // Key: "otp:{email}", value: otp, TTL: 180 giây
-  await redis.set(`otp:${email}`, otp, 'EX', 180)
-  const subject = `Mã OTP xác mình lấy lại mật khẩu`
-  const html = `Mã OTP xác mình lấy lại mật khẩu là <b>${otp}</b>. Thời hạn sử dụng là 3 phút. Lưu ý không được để lộ mã OTP`
-  sendMailHelper.sendMail(email, subject, html)
-  res.json({ code: 200, message: "Mã OTP đã được gửi qua email", data: { email: email } })
 }
 
 // [GET]: /user/password/otp
-module.exports.otpPassword = async (req, res) => {
-  const email = req.query.email
-  res.json({ code: 200, message: "Trang nhập mã OTP", data: { email: email } })
+module.exports.otpPassword = (req, res) => {
+  res.json({
+    code: 200,
+    message: "Trang nhập mã OTP",
+    data: { email: req.query.email }
+  })
 }
 
 // [POST]: /user/password/otp
 module.exports.otpPasswordPost = async (req, res) => {
-  const email = req.body.email
-  const otp = req.body.otp
-  const storedOtp = await redis.get(`otp:${email}`)
-  if (!storedOtp || storedOtp !== otp) {
-    return res.status(400).json({ code: 400, message: "OTP không đúng hoặc đã hết hạn" })
+  try {
+    const data = await userService.verifyOtp({
+      email: req.body.email,
+      otp: req.body.otp,
+      userAgent: req.get("User-Agent") || "",
+      ip: req.ip
+    })
+
+    setRefreshTokenCookie(res, data.refreshToken)
+
+    res.json({
+      code: 200,
+      message: "Xác thực OTP thành công",
+      data: { accessToken: data.accessToken }
+    })
+  } catch (error) {
+    logger.error('Lỗi xác thực OTP', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Xác thực OTP thất bại")
+    res.status(statusCode).json(body)
   }
-  await redis.del(`otp:${email}`) // Xoá sau khi xác thực thành công
-  const user = await User.findOne({
-    email: email,
-    deleted: false
-  })
-  const tokens = await createTokenPair(user, req, res)
-  res.json({
-    code: 200,
-    message: "Xác thực OTP thành công",
-    data: {
-      accessToken: tokens.accessToken
-    }
-  })
 }
 
 // [GET]: /user/password/reset
-module.exports.resetPassword = async (req, res) => {
+module.exports.resetPassword = (req, res) => {
   res.json({ code: 200, message: "Trang đổi mật khẩu" })
 }
 
 // [POST]: /user/password/reset
 module.exports.resetPasswordPost = async (req, res) => {
-  const password = req.body.password
-  const authUser = req.user
-  if (!authUser) {
+  if (!req.user) {
     return res.status(401).json({ code: 401, message: "Vui lòng đăng nhập" })
   }
-  await User.updateOne({
-    _id: authUser.id
-  }, {
-    password: bcrypt.hashSync(password, 10)
-  })
-  await RefreshToken.updateMany({
-    userId: authUser.id,
-    revoked: false
-  }, {
-    revoked: true,
-    revokedAt: new Date()
-  })
-  res.json({ code: 200, message: "Đổi mật khẩu thành công" })
+
+  try {
+    await userService.resetPassword({
+      password: req.body.password,
+      userId: req.user.id
+    })
+
+    res.json({ code: 200, message: "Đổi mật khẩu thành công" })
+  } catch (error) {
+    logger.error('Lỗi đổi mật khẩu', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Đổi mật khẩu thất bại")
+    res.status(statusCode).json(body)
+  }
 }
 
 // [GET]: /user/info
 module.exports.info = async (req, res) => {
-  const authUser = req.user
-  if (!authUser) {
-    return res.status(401).json({ code: 401, message: "Vui lòng đăng nhập" })
+  if (!requireAuth(req, res)) return
+
+  try {
+    res.json({
+      code: 200,
+      message: "Thành công",
+      data: await userService.getProfile(req.user.id)
+    })
+  } catch (error) {
+    logger.error('Lỗi lấy thông tin tài khoản', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Lỗi lấy thông tin tài khoản")
+    res.status(statusCode).json(body)
   }
-  const user = await User.findOne({ _id: authUser.id }).select("-password")
-  res.json({
-    code: 200,
-    message: "Thành công",
-    data: { user: user }
-  })
 }
 
 // [GET]: /user/edit
 module.exports.edit = async (req, res) => {
-  const authUser = req.user
-  if (!authUser) {
-    return res.status(401).json({ code: 401, message: "Vui lòng đăng nhập" })
+  if (!requireAuth(req, res)) return
+
+  try {
+    res.json({
+      code: 200,
+      message: "Thành công",
+      data: await userService.getProfile(req.user.id)
+    })
+  } catch (error) {
+    logger.error('Lỗi lấy thông tin tài khoản', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Lỗi lấy thông tin tài khoản")
+    res.status(statusCode).json(body)
   }
-  const user = await User.findOne({ _id: authUser.id }).select("-password")
-  res.json({
-    code: 200,
-    message: "Thành công",
-    data: { user: user }
-  })
 }
 
 // [PATCH]: /user/edit
 module.exports.editPatch = async (req, res) => {
-  const authUser = req.user
-  if (!authUser) {
-    return res.status(401).json({ code: 401, message: "Vui lòng đăng nhập" })
-  }
-  const user = authUser
-  const emailExit = await User.findOne({
-    _id: {
-      $ne: user._id
-    },
-    email: req.body.email,
-    deleted: false
-  })
-  if (emailExit) {
-    return res.status(400).json({ code: 400, message: `Email ${req.body.email} đã tồn tại` })
-  } else {
-    if (req.body.password) {
-      req.body.password = bcrypt.hashSync(req.body.password, 10)
-    } else {
-      delete req.body.password
-    }
-    await User.updateOne({
-      _id: user._id
-    }, req.body)
+  if (!requireAuth(req, res)) return
+
+  try {
+    await userService.updateProfile({ userId: req.user.id, body: req.body })
+
     res.json({ code: 200, message: "Cập nhật tài khoản thành công" })
+  } catch (error) {
+    logger.error('Lỗi cập nhật tài khoản', { error: error.message, stack: error.stack })
+    const { statusCode, body } = httpError.toResponse(error, "Cập nhật tài khoản thất bại")
+    res.status(statusCode).json(body)
   }
 }
