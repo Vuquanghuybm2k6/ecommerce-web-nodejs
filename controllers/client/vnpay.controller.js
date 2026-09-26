@@ -51,10 +51,10 @@ module.exports.vnpayReturn = async (req, res) => {
       const updated = await Order.findOneAndUpdate(
         {
           _id: order._id,
-          paymentStatus: { $nin: ["paid", "failed"] },
+          paymentStatus: { $nin: ["paid", "failed"] }, // không ghi đè đơn nếu đơn đã paid hoặc failed từ ipn
         },
         { $set: { paymentStatus: newStatus } },
-        { new: true }
+        { new: true } // trả về document sau khi update còn nếu không có new:true thì sẽ trả về document trước khi update
       )
 
       if (isSuccess && updated) {
