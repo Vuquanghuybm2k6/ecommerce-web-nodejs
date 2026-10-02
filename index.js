@@ -11,17 +11,21 @@ const { logger } = require('./helpers/logger')
 const morganStream = { write: (message) => logger.info(message.trim(), { category: 'http' }) }
 
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://ecommerce.khaifrost.com',
+].filter(Boolean)
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true)
     const normalizedOrigin = origin.replace(/\/$/, '')
-    const allowedOrigin = (process.env.FRONTEND_URL || '').replace(/\/$/, '')
-    if (normalizedOrigin === allowedOrigin || normalizedOrigin.endsWith('.vercel.app')) {
+    if (allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true)
     }
-    callback(null, false)
+    return callback(null, false)
   },
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS'],
   credentials: true
 }))
 
