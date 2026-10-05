@@ -14,11 +14,13 @@ const OTP_TTL_SECONDS = 180
 const OTP_KEY_PREFIX = "otp:"
 
 const register = async ({ body, cartId, userAgent, ip }) => {
-  const emailExit = await User.findOne({ email: body.email, deleted: false })
+  const normalizedEmail = body.email.trim().toLowerCase()
+  const emailExit = await User.findOne({ email: normalizedEmail, deleted: false })
   if (emailExit) throw httpError(400, "Email này đã tồn tại")
 
   const user = new User({
     ...body,
+    email: normalizedEmail,
     password: bcrypt.hashSync(body.password, 10)
   })
   await user.save()
@@ -37,24 +39,25 @@ const register = async ({ body, cartId, userAgent, ip }) => {
 }
 
 const login = async ({ email, password, cartId, userAgent, ip }) => {
-  const user = await User.findOne({ email: email, deleted: false })
+  const normalizedEmail = email.trim().toLowerCase()
+  const user = await User.findOne({ email: normalizedEmail, deleted: false })
   if (!user) {
-    logAction('auth', 'login_failed', `Login failed: email not found`, { email })
+    logAction('auth', 'login_failed', `Login failed: email not found`, { email: normalizedEmail })
     throw httpError(401, "Email không tồn tại")
   }
 
   if (user.status == "inactive") {
-    logAction('auth', 'login_failed', `Login failed: account inactive`, { email })
+    logAction('auth', 'login_failed', `Login failed: account inactive`, { email: normalizedEmail })
     throw httpError(401, "Tài khoản hiện đang bị khóa")
   }
 
-  if (user.authType == "google") {
-    logAction('auth', 'login_failed', `Login failed: Google account`, { email })
+  if (!user.password) {
+    logAction('auth', 'login_failed', `Login failed: Google-only account`, { email: normalizedEmail })
     throw httpError(401, "Tài khoản này sử dụng Google để đăng nhập")
   }
 
   if (!bcrypt.compareSync(password, user.password)) {
-    logAction('auth', 'login_failed', `Login failed: wrong password`, { email })
+    logAction('auth', 'login_failed', `Login failed: wrong password`, { email: normalizedEmail })
     throw httpError(401, "Sai mật khẩu")
   }
 

@@ -37,7 +37,7 @@ module.exports.login = async (req, res) => {
 
 // [POST]: /admin/auth/login
 module.exports.loginPost = async (req, res) => {
-  const email = req.body.email
+  const email = req.body.email.trim().toLowerCase()
   const password = req.body.password
   const user = await Account.findOne({
     email: email,
@@ -58,8 +58,8 @@ module.exports.loginPost = async (req, res) => {
     })
   }
 
-  if (user.authType == "google") {
-    logAction('auth', 'admin_login_failed', `Admin login failed: Google account`, { email })
+  if (!user.password) {
+    logAction('auth', 'admin_login_failed', `Admin login failed: Google-only account`, { email })
     return res.status(400).json({
       code: 400,
       message: "Tài khoản này sử dụng Google để đăng nhập"

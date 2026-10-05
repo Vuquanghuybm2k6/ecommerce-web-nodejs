@@ -8,12 +8,23 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    let user = await User.findOne({ googleId: profile.id })
+    const email = (profile.emails?.[0]?.value || "").trim().toLowerCase()
+    let user = await User.findOne({ googleId: profile.id, deleted: false })
+
+    if (!user && email) {
+      user = await User.findOne({ email, deleted: false })
+      if (user) {
+        user.googleId = profile.id
+        user.fullName = user.fullName || profile.displayName
+        user.avatar = user.avatar || profile.photos?.[0]?.value || ""
+        await user.save()
+      }
+    }
 
     if (!user) {
       user = new User({
         fullName: profile.displayName,
-        email: profile.emails?.[0]?.value || "",
+        email: email,
         avatar: profile.photos?.[0]?.value || "",
         googleId: profile.id,
         authType: "google"
